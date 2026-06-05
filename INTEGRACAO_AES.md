@@ -46,19 +46,33 @@ https://vagas.aesgestao.com/?embed=1
 
 ## Configuracao de DNS
 
-O registro exato depende da hospedagem escolhida:
+O dominio `vagas.aesgestao.com` ja foi adicionado ao projeto `trampo-facil` na Vercel.
 
-- Vercel costuma pedir um `CNAME` apontando `vagas` para `cname.vercel-dns.com`.
-- Netlify costuma pedir um `CNAME` apontando `vagas` para o dominio Netlify do projeto.
-- GitHub Pages costuma pedir um `CNAME` apontando `vagas` para `USUARIO.github.io`.
-
-Exemplo conceitual:
+O DNS atual do dominio `aesgestao.com` esta no Wix:
 
 ```text
-Tipo: CNAME
-Nome: vagas
-Destino: destino-informado-pela-hospedagem
+ns10.wixdns.net
+ns11.wixdns.net
 ```
+
+No painel de DNS do Wix, crie o seguinte registro:
+
+```text
+Tipo: A
+Host/Nome: vagas
+Valor/Destino: 76.76.21.21
+```
+
+Depois de salvar, a Vercel deve verificar automaticamente o dominio. A propagacao pode levar de alguns minutos ate algumas horas.
+
+Opcao alternativa, menos recomendada neste momento: trocar os nameservers do dominio inteiro para a Vercel:
+
+```text
+ns1.vercel-dns.com
+ns2.vercel-dns.com
+```
+
+Essa alternativa mexe no DNS do dominio principal inteiro, entao o registro `A` apenas para `vagas` e o caminho mais conservador.
 
 ## Como colocar no Wix
 
