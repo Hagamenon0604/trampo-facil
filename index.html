@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trampo Fácil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#inicio" aria-label="Trampo Fácil">
+        <span class="brand-mark">TF</span>
+        <span>Trampo Fácil</span>
+      </a>
+
+      <nav class="nav" aria-label="Navegação principal">
+        <a href="#vagas">Vagas</a>
+        <a href="#empresas">Cadastrar vaga</a>
+        <a href="#curriculos">Cadastrar currículo</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="inicio">
+        <div class="hero-media" role="img" aria-label="Equipe de restaurante em atendimento"></div>
+        <div class="hero-content">
+          <p class="eyebrow">A&S Gestão apresenta</p>
+          <h1>Trampo Fácil</h1>
+          <p>
+            Conecte casas que precisam contratar com profissionais prontos para
+            trabalhar em salão, cozinha, bar, caixa, delivery e atendimento.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#vagas">Ver vagas</a>
+            <a class="button secondary" href="#curriculos">Enviar currículo</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section stats" aria-label="Resumo da plataforma">
+        <div>
+          <strong id="job-count">0</strong>
+          <span>vagas abertas</span>
+        </div>
+        <div>
+          <strong id="resume-count">0</strong>
+          <span>currículos cadastrados</span>
+        </div>
+        <div>
+          <strong>24h</strong>
+          <span>para publicar uma oportunidade</span>
+        </div>
+      </section>
+
+      <section class="section jobs-section" id="vagas">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Oportunidades para bares e restaurantes</p>
+            <h2>Vagas para começar agora</h2>
+          </div>
+          <label class="search">
+            <span>Buscar</span>
+            <input id="job-search" type="search" placeholder="Cargo, bairro ou estabelecimento" />
+          </label>
+        </div>
+
+        <div class="job-grid" id="jobs-list" aria-live="polite"></div>
+      </section>
+
+      <section class="section forms-layout">
+        <form class="panel" id="job-form">
+          <div class="form-heading" id="empresas">
+            <p class="eyebrow">Para estabelecimentos</p>
+            <h2>Cadastrar vaga</h2>
+          </div>
+
+          <div class="field-group two-columns">
+            <label>
+              Nome do bar ou restaurante
+              <input name="company" required placeholder="Ex.: Boteco Central" />
+            </label>
+            <label>
+              Cargo
+              <input name="role" required placeholder="Ex.: Garçom" />
+            </label>
+          </div>
+
+          <div class="field-group two-columns">
+            <label>
+              Bairro
+              <input name="neighborhood" required placeholder="Ex.: Pinheiros" />
+            </label>
+            <label>
+              Salário
+              <input name="salary" required placeholder="Ex.: R$ 2.100 + gorjeta" />
+            </label>
+          </div>
+
+          <div class="field-group two-columns">
+            <label>
+              Escala
+              <select name="shift" required>
+                <option value="">Selecione</option>
+                <option>Diurno</option>
+                <option>Noturno</option>
+                <option>Fim de semana</option>
+                <option>Escala 6x1</option>
+                <option>Freelancer</option>
+              </select>
+            </label>
+            <label>
+              Contato
+              <input name="contact" required placeholder="WhatsApp ou e-mail" />
+            </label>
+          </div>
+
+          <label>
+            Descrição da vaga
+            <textarea
+              name="description"
+              required
+              rows="4"
+              placeholder="Conte as atividades, requisitos e benefícios."
+            ></textarea>
+          </label>
+
+          <button class="button primary full" type="submit">Publicar vaga</button>
+        </form>
+
+        <form class="panel accent" id="resume-form">
+          <div class="form-heading" id="curriculos">
+            <p class="eyebrow">Para candidatos</p>
+            <h2>Cadastrar currículo</h2>
+          </div>
+
+          <div class="field-group two-columns">
+            <label>
+              Nome completo
+              <input name="name" required placeholder="Seu nome" />
+            </label>
+            <label>
+              Telefone
+              <input name="phone" required placeholder="WhatsApp" />
+            </label>
+          </div>
+
+          <div class="field-group two-columns">
+            <label>
+              Cargo desejado
+              <input name="desiredRole" required placeholder="Ex.: Cozinheira" />
+            </label>
+            <label>
+              Bairro
+              <input name="neighborhood" required placeholder="Onde você busca vaga" />
+            </label>
+          </div>
+
+          <label>
+            Experiência
+            <textarea
+              name="experience"
+              required
+              rows="4"
+              placeholder="Resumo das experiências, cursos e disponibilidade."
+            ></textarea>
+          </label>
+
+          <button class="button dark full" type="submit">Enviar currículo</button>
+        </form>
+      </section>
+
+      <section class="section candidates-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Banco de talentos</p>
+            <h2>Currículos recentes</h2>
+          </div>
+        </div>
+        <div class="resume-grid" id="resumes-list" aria-live="polite"></div>
+      </section>
+
+      <section class="section partner-band">
+        <div>
+          <p class="eyebrow">Uma solução A&S Gestão</p>
+          <h2>Recrutamento mais ágil para o food service</h2>
+        </div>
+        <a class="button dark" href="https://www.aesgestao.com/" target="_blank" rel="noreferrer">
+          Conhecer a consultoria
+        </a>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
