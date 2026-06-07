@@ -40,8 +40,8 @@ a {
   display: flex;
   gap: 24px;
   justify-content: space-between;
-  min-height: 72px;
-  padding: 14px clamp(18px, 4vw, 56px);
+  min-height: 86px;
+  padding: 12px clamp(18px, 4vw, 56px);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -52,19 +52,15 @@ a {
   display: flex;
   font-size: 1.05rem;
   font-weight: 800;
-  gap: 10px;
+  gap: 14px;
   white-space: nowrap;
 }
 
-.brand-mark {
-  align-items: center;
-  background: var(--tomato);
-  border-radius: 8px;
-  color: var(--white);
-  display: inline-flex;
-  height: 40px;
-  justify-content: center;
-  width: 40px;
+.brand-logo {
+  display: block;
+  height: 64px;
+  object-fit: contain;
+  width: 64px;
 }
 
 .nav {
@@ -87,7 +83,7 @@ a {
 
 .hero {
   display: grid;
-  min-height: calc(100vh - 72px);
+  min-height: calc(100vh - 86px);
   overflow: hidden;
   position: relative;
 }
