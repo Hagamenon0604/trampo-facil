@@ -90,6 +90,12 @@ alter table resumes enable row level security;
 alter table applications enable row level security;
 alter table interviews enable row level security;
 
+grant usage on schema public to anon, authenticated, service_role;
+grant select on jobs to anon, authenticated;
+grant insert on resumes to anon, authenticated;
+grant all privileges on all tables in schema public to service_role;
+grant all privileges on all sequences in schema public to service_role;
+
 drop policy if exists "Public can read published jobs" on jobs;
 create policy "Public can read published jobs"
 on jobs for select
