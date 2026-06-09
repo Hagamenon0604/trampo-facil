@@ -207,6 +207,7 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
           starts_at: new Date(data.starts_at).toISOString(),
         });
         const created = result.interview || result;
+        const meet = result.meet || {};
         const notifications = result.notifications || [];
         const sentChannels = notifications
           .filter((item) => item.status === "sent")
@@ -221,11 +222,16 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
         const relatedJob = initialJobs.find((job) => job.id === created.job_id);
         setLastWhatsappUrl(whatsappUrl(selectedResume, created, relatedJob));
         form.reset();
-        showToast(
-          sentChannels.length
-            ? `Entrevista agendada. Enviado por ${sentChannels.join(" e ")}.`
-            : "Entrevista agendada. Envio automático ainda não configurado.",
-        );
+        const meetText =
+          meet.status === "created"
+            ? " Meet criado."
+            : meet.status === "failed"
+              ? " Meet não criado."
+              : "";
+        const notificationText = sentChannels.length
+          ? ` Enviado por ${sentChannels.join(" e ")}.`
+          : " Envio automático ainda não configurado.";
+        showToast(`Entrevista agendada.${meetText}${notificationText}`);
       } catch (error) {
         showToast(error.message);
       }
@@ -258,6 +264,20 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
           <span>Agenda</span>
           <strong>{interviews.length}</strong>
         </div>
+      </section>
+
+      <section className="section integration-strip">
+        <div>
+          <p className="eyebrow">Google Meet</p>
+          <h2>Entrevistas online com link automático</h2>
+          <p>
+            Conecte a conta Google da operação para criar evento no Agenda e link único do Meet
+            ao agendar entrevistas online.
+          </p>
+        </div>
+        <a className="button dark" href="/api/google/connect">
+          Conectar Google Agenda
+        </a>
       </section>
 
       <section className="section admin-workspace">
@@ -420,7 +440,7 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                   </div>
                   <label>
                     Local ou link
-                    <input name="location" placeholder="Endereço, Google Meet ou WhatsApp" />
+                    <input name="location" placeholder="Deixe vazio para gerar Google Meet automaticamente" />
                   </label>
                   <label>
                     Observações

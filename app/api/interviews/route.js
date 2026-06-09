@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createInterview, getInterviews, getJobs, getResumes } from "@/lib/data";
 import { isAdminSessionValid } from "@/lib/admin-auth";
+import { createGoogleMeetEvent } from "@/lib/google-calendar";
 import { sendInterviewNotifications } from "@/lib/notifications";
 import { cleanText, requireFields } from "@/lib/validators";
 
@@ -41,6 +42,26 @@ export async function POST(request) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
 
+    const [resumes, jobs] = await Promise.all([getResumes(), getJobs({ includeDrafts: true })]);
+    const resume = resumes.find((item) => item.id === payload.resume_id);
+    const job = jobs.find((item) => item.id === payload.job_id);
+    let meet = { status: "skipped", reason: "Entrevista não é online ou já possui local/link." };
+
+    if (resume && payload.channel === "online" && !payload.location) {
+      try {
+        meet = await createGoogleMeetEvent({ resume, job, interview: payload });
+
+        if (meet.meetLink) {
+          payload.location = meet.meetLink;
+          payload.notes = [payload.notes, meet.htmlLink ? `Evento Google Agenda: ${meet.htmlLink}` : null]
+            .filter(Boolean)
+            .join("\n");
+        }
+      } catch (caughtError) {
+        meet = { status: "failed", reason: caughtError.message };
+      }
+    }
+
     const result = await createInterview(payload);
 
     if (!result.configured) {
@@ -50,14 +71,11 @@ export async function POST(request) {
       );
     }
 
-    const [resumes, jobs] = await Promise.all([getResumes(), getJobs({ includeDrafts: true })]);
-    const resume = resumes.find((item) => item.id === result.data.resume_id);
-    const job = jobs.find((item) => item.id === result.data.job_id);
     const notifications = resume
       ? await sendInterviewNotifications({ resume, interview: result.data, job })
       : [{ channel: "automatic", status: "skipped", reason: "Candidato não encontrado." }];
 
-    return NextResponse.json({ data: { interview: result.data, notifications } }, { status: 201 });
+    return NextResponse.json({ data: { interview: result.data, meet, notifications } }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

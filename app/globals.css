@@ -589,6 +589,29 @@ label {
   gap: 18px;
 }
 
+.integration-strip {
+  align-items: center;
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding-bottom: 26px;
+  padding-top: 26px;
+}
+
+.integration-strip h2 {
+  font-size: 1.35rem;
+  margin: 0 0 6px;
+}
+
+.integration-strip p:not(.eyebrow) {
+  color: var(--muted);
+  margin: 0;
+  max-width: 760px;
+}
+
 .admin-toolbar {
   background: var(--white);
   border: 1px solid var(--line);
@@ -766,6 +789,11 @@ label {
   }
 
   .partner-band {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .integration-strip {
     align-items: flex-start;
     flex-direction: column;
   }
