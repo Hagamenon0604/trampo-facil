@@ -1,3 +1,6 @@
+delete from jobs
+where company in ('Boteco Central', 'Cantina Boa Massa', 'Bar do Mercado');
+
 insert into jobs (company, role, neighborhood, salary, shift, contact, description, status)
 values
   ('Boteco Central', 'Garçom', 'Vila Madalena', 'R$ 2.100 + gorjeta', 'Noturno', '(11) 90000-1001', 'Atendimento de mesas, organização do salão e apoio no fechamento da casa.', 'published'),
