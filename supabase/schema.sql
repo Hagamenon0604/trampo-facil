@@ -1,0 +1,101 @@
+create extension if not exists pgcrypto;
+
+create table if not exists companies (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  trade_name text,
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  city text,
+  neighborhood text,
+  status text not null default 'active' check (status in ('active', 'inactive')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists jobs (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid references companies(id) on delete set null,
+  company text not null,
+  role text not null,
+  neighborhood text not null,
+  city text not null default 'São Paulo',
+  salary text not null,
+  shift text not null,
+  contact text not null,
+  description text not null,
+  requirements text,
+  benefits text,
+  status text not null default 'published' check (status in ('draft', 'published', 'paused', 'closed')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists resumes (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text not null,
+  email text,
+  desired_role text not null,
+  neighborhood text not null,
+  city text not null default 'São Paulo',
+  availability text,
+  experience text not null,
+  salary_expectation text,
+  lgpd_accepted boolean not null default false,
+  status text not null default 'new' check (status in ('new', 'screening', 'interview', 'approved', 'rejected', 'hired')),
+  internal_notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists applications (
+  id uuid primary key default gen_random_uuid(),
+  job_id uuid not null references jobs(id) on delete cascade,
+  resume_id uuid not null references resumes(id) on delete cascade,
+  status text not null default 'applied' check (status in ('applied', 'screening', 'interview', 'approved', 'rejected', 'hired')),
+  score numeric(5, 2),
+  internal_notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (job_id, resume_id)
+);
+
+create table if not exists interviews (
+  id uuid primary key default gen_random_uuid(),
+  application_id uuid references applications(id) on delete cascade,
+  resume_id uuid references resumes(id) on delete set null,
+  job_id uuid references jobs(id) on delete set null,
+  starts_at timestamptz not null,
+  ends_at timestamptz,
+  channel text not null default 'online' check (channel in ('online', 'phone', 'onsite')),
+  location text,
+  status text not null default 'scheduled' check (status in ('scheduled', 'confirmed', 'rescheduled', 'attended', 'no_show', 'cancelled')),
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists jobs_status_created_at_idx on jobs(status, created_at desc);
+create index if not exists jobs_role_idx on jobs(role);
+create index if not exists resumes_status_created_at_idx on resumes(status, created_at desc);
+create index if not exists resumes_desired_role_idx on resumes(desired_role);
+create index if not exists applications_status_idx on applications(status);
+create index if not exists interviews_starts_at_idx on interviews(starts_at);
+
+alter table companies enable row level security;
+alter table jobs enable row level security;
+alter table resumes enable row level security;
+alter table applications enable row level security;
+alter table interviews enable row level security;
+
+drop policy if exists "Public can read published jobs" on jobs;
+create policy "Public can read published jobs"
+on jobs for select
+using (status = 'published');
+
+drop policy if exists "Public can submit resumes" on resumes;
+create policy "Public can submit resumes"
+on resumes for insert
+with check (lgpd_accepted = true);

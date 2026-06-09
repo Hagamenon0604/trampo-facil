@@ -267,6 +267,19 @@ textarea:focus {
   box-shadow: 0 0 0 4px rgba(232, 79, 53, 0.13);
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.system-banner {
+  background: #fff5d8;
+  border-bottom: 1px solid #f4d77c;
+  color: #654d00;
+  font-weight: 800;
+  padding: 12px clamp(18px, 4vw, 56px);
+}
+
 .job-grid,
 .resume-grid {
   display: grid;
@@ -349,6 +362,20 @@ label {
   gap: 8px;
 }
 
+.checkbox-field {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  line-height: 1.45;
+}
+
+.checkbox-field input {
+  min-height: auto;
+  margin-top: 2px;
+  width: 18px;
+}
+
 .field-group {
   display: grid;
   gap: 14px;
@@ -401,10 +428,119 @@ label {
   max-width: 720px;
 }
 
+.admin-hero {
+  background: var(--navy);
+  color: var(--white);
+}
+
+.admin-hero h1 {
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  max-width: 900px;
+}
+
+.admin-hero p:not(.eyebrow) {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 1.08rem;
+  line-height: 1.65;
+  max-width: 680px;
+}
+
+.admin-warning {
+  align-items: center;
+  background: #fff5d8;
+  color: #654d00;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-warning span {
+  color: #80640c;
+}
+
+.admin-kpis {
+  background: var(--white);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-top: 34px;
+  padding-bottom: 34px;
+}
+
+.admin-kpis div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+}
+
+.admin-kpis span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.admin-kpis strong {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.admin-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.admin-panel {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.compact {
+  margin-bottom: 18px;
+}
+
+.table-list {
+  display: grid;
+  gap: 10px;
+}
+
+.table-row {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 14px;
+}
+
+.table-row div {
+  display: grid;
+  gap: 5px;
+}
+
+.table-row span {
+  color: var(--muted);
+}
+
+.status-pill {
+  background: var(--mint-soft);
+  border-radius: 999px;
+  color: #14785d !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
 @media (max-width: 980px) {
   .job-grid,
   .resume-grid,
-  .forms-layout {
+  .forms-layout,
+  .admin-grid,
+  .admin-kpis {
     grid-template-columns: 1fr;
   }
 
@@ -450,21 +586,21 @@ body.embed-mode {
   background: var(--white);
 }
 
-.embed-mode .topbar,
-.embed-mode .hero,
-.embed-mode .stats,
-.embed-mode .partner-band {
+.embed-surface .topbar,
+.embed-surface .hero,
+.embed-surface .stats,
+.embed-surface .partner-band {
   display: none;
 }
 
-.embed-mode .section {
+.embed-surface .section {
   padding: 28px clamp(14px, 3vw, 34px);
 }
 
-.embed-mode .jobs-section {
+.embed-surface .jobs-section {
   padding-top: 34px;
 }
 
-.embed-mode .forms-layout {
+.embed-surface .forms-layout {
   background: var(--paper);
 }
