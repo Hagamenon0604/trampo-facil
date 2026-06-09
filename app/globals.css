@@ -281,7 +281,8 @@ button:disabled {
 }
 
 .job-grid,
-.resume-grid {
+.resume-grid,
+.trust-grid {
   display: grid;
   gap: 18px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -497,6 +498,49 @@ label {
   padding: 24px;
 }
 
+.login-page {
+  align-items: center;
+  background: var(--paper);
+  display: grid;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.login-panel {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 480px;
+  padding: clamp(24px, 5vw, 42px);
+  width: 100%;
+}
+
+.login-panel h1 {
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  line-height: 1;
+  margin-bottom: 0;
+}
+
+.login-panel p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.login-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-error {
+  color: var(--tomato-dark);
+  font-weight: 800;
+  margin: 0;
+}
+
 .compact {
   margin-bottom: 18px;
 }
@@ -538,6 +582,7 @@ label {
 @media (max-width: 980px) {
   .job-grid,
   .resume-grid,
+  .trust-grid,
   .forms-layout,
   .admin-grid,
   .admin-kpis {

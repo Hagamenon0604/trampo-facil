@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createResume, getResumes } from "@/lib/data";
+import { isAdminSessionValid } from "@/lib/admin-auth";
 import { cleanText, requireFields } from "@/lib/validators";
 
 export async function GET() {
   try {
+    if (!isAdminSessionValid(await cookies())) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
     const resumes = await getResumes();
     return NextResponse.json({ data: resumes });
   } catch (error) {

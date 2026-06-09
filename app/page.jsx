@@ -1,9 +1,9 @@
 import { Header } from "@/components/Header";
 import { PlatformClient } from "@/components/PlatformClient";
-import { getJobs, getPlatformStatus, getResumes } from "@/lib/data";
+import { getJobs, getPlatformStatus, getResumeCount } from "@/lib/data";
 
 export default async function HomePage({ searchParams }) {
-  const [jobs, resumes] = await Promise.all([getJobs(), getResumes()]);
+  const [jobs, resumeCount] = await Promise.all([getJobs(), getResumeCount()]);
   const status = getPlatformStatus();
   const embedMode = searchParams?.embed === "1";
 
@@ -35,7 +35,7 @@ export default async function HomePage({ searchParams }) {
 
       <PlatformClient
         initialJobs={jobs}
-        initialResumes={resumes}
+        initialResumeCount={resumeCount}
         databaseConfigured={status.databaseConfigured}
       />
 

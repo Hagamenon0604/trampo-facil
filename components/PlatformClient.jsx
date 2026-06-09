@@ -17,14 +17,6 @@ function normalizeJob(job) {
   };
 }
 
-function normalizeResume(resume) {
-  return {
-    ...resume,
-    desired_role: resume.desired_role || resume.desiredRole,
-    created_at: resume.created_at || resume.createdAt || new Date().toISOString(),
-  };
-}
-
 async function submitJson(url, payload) {
   const response = await fetch(url, {
     method: "POST",
@@ -42,9 +34,9 @@ async function submitJson(url, payload) {
   return result.data;
 }
 
-export function PlatformClient({ initialJobs, initialResumes, databaseConfigured }) {
+export function PlatformClient({ initialJobs, initialResumeCount, databaseConfigured }) {
   const [jobs, setJobs] = useState(initialJobs.map(normalizeJob));
-  const [resumes, setResumes] = useState(initialResumes.map(normalizeResume));
+  const [resumeCount, setResumeCount] = useState(initialResumeCount);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -94,8 +86,8 @@ export function PlatformClient({ initialJobs, initialResumes, databaseConfigured
 
     startTransition(async () => {
       try {
-        const created = await submitJson("/api/resumes", data);
-        setResumes((currentResumes) => [normalizeResume(created), ...currentResumes]);
+        await submitJson("/api/resumes", data);
+        setResumeCount((currentCount) => currentCount + 1);
         form.reset();
         showToast("Currículo cadastrado com sucesso.");
       } catch (error) {
@@ -118,7 +110,7 @@ export function PlatformClient({ initialJobs, initialResumes, databaseConfigured
           <span>vagas abertas</span>
         </div>
         <div>
-          <strong>{resumes.length}</strong>
+          <strong>{resumeCount}</strong>
           <span>currículos cadastrados</span>
         </div>
         <div>
@@ -298,34 +290,38 @@ export function PlatformClient({ initialJobs, initialResumes, databaseConfigured
         </form>
       </section>
 
-      <section className="section candidates-section">
+      <section className="section trust-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Banco de talentos</p>
-            <h2>Currículos recentes</h2>
+            <p className="eyebrow">Banco de talentos protegido</p>
+            <h2>Currículos centralizados para a A&S</h2>
           </div>
         </div>
-        <div className="resume-grid" aria-live="polite">
-          {resumes.slice(0, 6).map((resume) => (
-            <article className="resume-card" key={resume.id}>
-              <div>
-                <p className="eyebrow">{resume.desired_role}</p>
-                <h3>{resume.name}</h3>
-              </div>
-              <div className="card-meta">
-                <span>
-                  <strong>Bairro:</strong> {resume.neighborhood}
-                </span>
-                <span>
-                  <strong>Telefone:</strong> {resume.phone}
-                </span>
-                <span>
-                  <strong>Cadastrado:</strong> {formatDate(resume.created_at)}
-                </span>
-              </div>
-              <p className="card-description">{resume.experience}</p>
-            </article>
-          ))}
+        <div className="trust-grid">
+          <article className="resume-card">
+            <p className="eyebrow">Privacidade</p>
+            <h3>Dados pessoais não ficam públicos</h3>
+            <p className="card-description">
+              Currículos, telefones e observações de triagem aparecem somente no painel protegido da
+              A&S.
+            </p>
+          </article>
+          <article className="resume-card">
+            <p className="eyebrow">Triagem</p>
+            <h3>Pipeline para acompanhar candidatos</h3>
+            <p className="card-description">
+              O próximo passo é mover talentos entre novo, triagem, entrevista, aprovado e
+              contratado.
+            </p>
+          </article>
+          <article className="resume-card">
+            <p className="eyebrow">Agenda</p>
+            <h3>Entrevistas com status claro</h3>
+            <p className="card-description">
+              A agenda vai organizar horários, confirmações, faltas, remarcações e histórico de
+              atendimento.
+            </p>
+          </article>
         </div>
       </section>
 
