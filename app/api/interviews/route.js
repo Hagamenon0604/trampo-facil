@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createInterview, getInterviews } from "@/lib/data";
+import { createInterview, getInterviews, getJobs, getResumes } from "@/lib/data";
 import { isAdminSessionValid } from "@/lib/admin-auth";
+import { sendInterviewNotifications } from "@/lib/notifications";
 import { cleanText, requireFields } from "@/lib/validators";
 
 export async function GET() {
@@ -49,7 +50,14 @@ export async function POST(request) {
       );
     }
 
-    return NextResponse.json({ data: result.data }, { status: 201 });
+    const [resumes, jobs] = await Promise.all([getResumes(), getJobs({ includeDrafts: true })]);
+    const resume = resumes.find((item) => item.id === result.data.resume_id);
+    const job = jobs.find((item) => item.id === result.data.job_id);
+    const notifications = resume
+      ? await sendInterviewNotifications({ resume, interview: result.data, job })
+      : [{ channel: "automatic", status: "skipped", reason: "Candidato não encontrado." }];
+
+    return NextResponse.json({ data: { interview: result.data, notifications } }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

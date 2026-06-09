@@ -201,11 +201,16 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
 
     startTransition(async () => {
       try {
-        const created = await submitJson("/api/interviews", {
+        const result = await submitJson("/api/interviews", {
           ...data,
           resume_id: selectedResume.id,
           starts_at: new Date(data.starts_at).toISOString(),
         });
+        const created = result.interview || result;
+        const notifications = result.notifications || [];
+        const sentChannels = notifications
+          .filter((item) => item.status === "sent")
+          .map((item) => item.channel.toUpperCase());
 
         setInterviews((current) => [...current, created]);
         setResumes((current) =>
@@ -216,7 +221,11 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
         const relatedJob = initialJobs.find((job) => job.id === created.job_id);
         setLastWhatsappUrl(whatsappUrl(selectedResume, created, relatedJob));
         form.reset();
-        showToast("Entrevista agendada. Envie a confirmação por WhatsApp.");
+        showToast(
+          sentChannels.length
+            ? `Entrevista agendada. Enviado por ${sentChannels.join(" e ")}.`
+            : "Entrevista agendada. Envio automático ainda não configurado.",
+        );
       } catch (error) {
         showToast(error.message);
       }
