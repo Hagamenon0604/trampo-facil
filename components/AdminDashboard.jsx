@@ -62,6 +62,51 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+function whatsappPhone(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  if (!digits) {
+    return "";
+  }
+
+  return digits.startsWith("55") ? digits : `55${digits}`;
+}
+
+function whatsappUrl(resume, interview, job) {
+  const phone = whatsappPhone(resume?.phone);
+
+  if (!phone) {
+    return "";
+  }
+
+  const jobText = job ? ` para a vaga de ${job.role} (${job.company})` : "";
+  const locationText = interview.location ? `\nLocal/link: ${interview.location}` : "";
+  const message = [
+    `Olá, ${resume.name}. Tudo bem?`,
+    `Aqui é da A&S Gestão de Pessoas. Sua entrevista${jobText} foi agendada para ${formatDateTime(interview.starts_at)}.`,
+    `Formato: ${labelFor(interview.channel)}.${locationText}`,
+    "Pode confirmar sua presença por aqui?",
+  ].join("\n\n");
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+function whatsappProfileUrl(resume) {
+  const phone = whatsappPhone(resume?.phone);
+
+  if (!phone) {
+    return "";
+  }
+
+  const message = [
+    `Olá, ${resume.name}. Tudo bem?`,
+    "Aqui é da A&S Gestão de Pessoas. Recebemos seu currículo pela plataforma Trampo Fácil.",
+    "Podemos falar sobre oportunidades em bares e restaurantes?",
+  ].join("\n\n");
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
 async function submitJson(url, payload) {
   const response = await fetch(url, {
     method: "POST",
@@ -89,6 +134,7 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
     status: "all",
   });
   const [selectedResumeId, setSelectedResumeId] = useState(initialResumes[0]?.id || "");
+  const [lastWhatsappUrl, setLastWhatsappUrl] = useState("");
   const [toast, setToast] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -167,8 +213,10 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
             resume.id === selectedResume.id ? { ...resume, status: "interview" } : resume,
           ),
         );
+        const relatedJob = initialJobs.find((job) => job.id === created.job_id);
+        setLastWhatsappUrl(whatsappUrl(selectedResume, created, relatedJob));
         form.reset();
-        showToast("Entrevista agendada com sucesso.");
+        showToast("Entrevista agendada. Envie a confirmação por WhatsApp.");
       } catch (error) {
         showToast(error.message);
       }
@@ -294,6 +342,17 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                   <span className="status-pill">{labelFor(selectedResume.status)}</span>
                 </div>
 
+                <div className="quick-actions">
+                  <a
+                    className="button secondary full"
+                    href={whatsappProfileUrl(selectedResume)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Chamar no WhatsApp
+                  </a>
+                </div>
+
                 <dl className="detail-list">
                   <div>
                     <dt>Telefone</dt>
@@ -361,6 +420,11 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                   <button className="button primary full" type="submit" disabled={isPending}>
                     Agendar entrevista
                   </button>
+                  {lastWhatsappUrl ? (
+                    <a className="button whatsapp full" href={lastWhatsappUrl} target="_blank" rel="noreferrer">
+                      Enviar confirmação no WhatsApp
+                    </a>
+                  ) : null}
                 </form>
               </>
             ) : (
@@ -386,6 +450,11 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                       <strong>{formatDateTime(interview.starts_at)}</strong>
                       <span>{resume?.name || "Candidato"} · {labelFor(interview.channel)}</span>
                       <small>{job ? `${job.role} · ${job.company}` : interview.location || "Sem vaga específica"}</small>
+                      {resume ? (
+                        <a href={whatsappUrl(resume, interview, job)} target="_blank" rel="noreferrer">
+                          Enviar WhatsApp
+                        </a>
+                      ) : null}
                     </article>
                   );
                 })

@@ -579,6 +579,11 @@ label {
   white-space: nowrap;
 }
 
+.button.whatsapp {
+  background: #1f9d55;
+  color: var(--white);
+}
+
 .admin-workspace {
   display: grid;
   gap: 18px;
@@ -664,6 +669,10 @@ label {
   margin-bottom: 18px;
 }
 
+.quick-actions {
+  margin-bottom: 14px;
+}
+
 .detail-header h2,
 .schedule-form h3 {
   margin: 0;
@@ -716,6 +725,12 @@ label {
 .schedule-item {
   display: grid;
   gap: 5px;
+}
+
+.schedule-item a {
+  color: var(--tomato);
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .toast {
