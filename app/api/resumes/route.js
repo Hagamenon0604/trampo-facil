@@ -1,8 +1,50 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createResume, getResumes } from "@/lib/data";
+import { createResume, getResumes, updateResumeFile, uploadResumeFile } from "@/lib/data";
 import { isAdminSessionValid } from "@/lib/admin-auth";
 import { cleanText, requireFields } from "@/lib/validators";
+
+const allowedResumeTypes = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+async function readPayload(request) {
+  const contentType = request.headers.get("content-type") || "";
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await request.formData();
+    return {
+      body: Object.fromEntries(formData.entries()),
+      file: formData.get("resume_file"),
+    };
+  }
+
+  return {
+    body: await request.json(),
+    file: null,
+  };
+}
+
+function validateResumeFile(file) {
+  if (!file || typeof file === "string" || !file.size) {
+    return null;
+  }
+
+  if (!allowedResumeTypes.has(file.type)) {
+    return "Envie o currículo em PDF, Word ou imagem.";
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    return "O currículo deve ter até 8MB.";
+  }
+
+  return null;
+}
 
 export async function GET() {
   try {
@@ -19,26 +61,36 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const { body, file } = await readPayload(request);
     const payload = {
       job_id: cleanText(body.job_id),
       name: cleanText(body.name),
       phone: cleanText(body.phone),
       email: cleanText(body.email),
+      area: cleanText(body.area),
       desired_role: cleanText(body.desired_role),
+      city: cleanText(body.city),
       neighborhood: cleanText(body.neighborhood),
       availability: cleanText(body.availability),
       experience: cleanText(body.experience),
       lgpd_accepted: Boolean(body.lgpd_accepted),
     };
 
-    const validation = requireFields(payload, [
+    const requiredFields = [
       "name",
       "phone",
       "desired_role",
+      "area",
+      "city",
       "neighborhood",
-      "experience",
-    ]);
+    ];
+    const fileProvided = file && typeof file !== "string" && file.size;
+
+    if (!fileProvided) {
+      requiredFields.push("experience");
+    }
+
+    const validation = requireFields(payload, requiredFields);
 
     if (!validation.ok) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
@@ -49,6 +101,12 @@ export async function POST(request) {
         { error: "É necessário aceitar o tratamento de dados para enviar o currículo." },
         { status: 400 },
       );
+    }
+
+    const fileError = validateResumeFile(file);
+
+    if (fileError) {
+      return NextResponse.json({ error: fileError }, { status: 400 });
     }
 
     const result = await createResume(payload);
@@ -63,7 +121,36 @@ export async function POST(request) {
       );
     }
 
-    return NextResponse.json({ data: result.data }, { status: 201 });
+    let resume = result.data;
+
+    if (file && typeof file !== "string" && file.size) {
+      const bytes = Buffer.from(await file.arrayBuffer());
+      const upload = await uploadResumeFile({
+        resumeId: resume.id,
+        fileName: file.name,
+        contentType: file.type,
+        bytes,
+      });
+
+      if (upload.path) {
+        const updated = await updateResumeFile(resume.id, {
+          resume_file_path: upload.path,
+          resume_file_name: file.name,
+          resume_file_type: file.type,
+          resume_file_size: file.size,
+        });
+
+        resume = updated.data || {
+          ...resume,
+          resume_file_path: upload.path,
+          resume_file_name: file.name,
+          resume_file_type: file.type,
+          resume_file_size: file.size,
+        };
+      }
+    }
+
+    return NextResponse.json({ data: { ...resume, application: result.application } }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

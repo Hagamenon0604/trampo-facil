@@ -34,6 +34,20 @@ async function submitJson(url, payload) {
   return result.data;
 }
 
+async function submitFormData(url, payload) {
+  const response = await fetch(url, {
+    method: "POST",
+    body: payload,
+  });
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || "Não foi possível concluir a operação.");
+  }
+
+  return result.data;
+}
+
 export function PlatformClient({ initialJobs, initialResumeCount, databaseConfigured }) {
   const [jobs, setJobs] = useState(initialJobs.map(normalizeJob));
   const [resumeCount, setResumeCount] = useState(initialResumeCount);
@@ -83,19 +97,18 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-    data.lgpd_accepted = formData.get("lgpd_accepted") === "on";
-    data.job_id = selectedJob?.id || "";
+    formData.set("lgpd_accepted", formData.get("lgpd_accepted") === "on" ? "true" : "");
+    formData.set("job_id", selectedJob?.id || "");
 
     startTransition(async () => {
       try {
-        await submitJson("/api/resumes", data);
+        await submitFormData("/api/resumes", formData);
         setResumeCount((currentCount) => currentCount + 1);
         form.reset();
         setSelectedJob(null);
         setDesiredRole("");
         showToast(
-          data.job_id
+          selectedJob?.id
             ? "Candidatura enviada com sucesso para essa vaga."
             : "Currículo cadastrado com sucesso.",
         );
@@ -307,8 +320,28 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
 
           <div className="field-group two-columns">
             <label>
-              Bairro
-              <input name="neighborhood" required placeholder="Onde você busca vaga" />
+              Área
+              <select name="area" required defaultValue="">
+                <option value="">Selecione</option>
+                <option>Cozinha</option>
+                <option>Atendimento</option>
+                <option>Bar</option>
+                <option>Administrativo</option>
+                <option>Liderança</option>
+                <option>Delivery</option>
+                <option>Limpeza</option>
+              </select>
+            </label>
+            <label>
+              Cidade
+              <input name="city" required placeholder="Ex.: São Paulo" />
+            </label>
+          </div>
+
+          <div className="field-group two-columns">
+            <label>
+              Bairro ou região
+              <input name="neighborhood" required placeholder="Ex.: Zona Sul, Pinheiros" />
             </label>
             <label>
               Disponibilidade
@@ -317,12 +350,20 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
           </div>
 
           <label>
-            Experiência
+            Anexar currículo
+            <input
+              name="resume_file"
+              type="file"
+              accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
+            />
+          </label>
+
+          <label>
+            Experiência ou observações
             <textarea
               name="experience"
-              required
               rows="4"
-              placeholder="Resumo das experiências, cursos e disponibilidade."
+              placeholder="Opcional se anexar o currículo. Resuma experiências, cursos e disponibilidade."
             />
           </label>
 

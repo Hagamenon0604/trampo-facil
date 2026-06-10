@@ -646,7 +646,7 @@ label {
   border-radius: 8px;
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(240px, 1.6fr) repeat(3, minmax(150px, 1fr));
+  grid-template-columns: minmax(240px, 1.6fr) repeat(5, minmax(140px, 1fr));
   padding: 16px;
 }
 
@@ -721,7 +721,15 @@ label {
 }
 
 .quick-actions {
+  display: grid;
+  gap: 10px;
   margin-bottom: 14px;
+}
+
+.file-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
 }
 
 .detail-header h2,
@@ -850,7 +858,8 @@ label {
 
   .stats,
   .two-columns,
-  .detail-list {
+  .detail-list,
+  .file-actions {
     grid-template-columns: 1fr;
   }
 }

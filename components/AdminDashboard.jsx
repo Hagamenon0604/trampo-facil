@@ -130,6 +130,8 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
   const [filters, setFilters] = useState({
     query: "",
     desired_role: "all",
+    area: "all",
+    city: "all",
     neighborhood: "all",
     status: "all",
   });
@@ -142,8 +144,16 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
     () => uniqueOptions(resumes, "desired_role", "Todos os cargos"),
     [resumes],
   );
+  const areaOptions = useMemo(
+    () => uniqueOptions(resumes, "area", "Todas as áreas"),
+    [resumes],
+  );
+  const cityOptions = useMemo(
+    () => uniqueOptions(resumes, "city", "Todas as cidades"),
+    [resumes],
+  );
   const neighborhoodOptions = useMemo(
-    () => uniqueOptions(resumes, "neighborhood", "Todos os bairros"),
+    () => uniqueOptions(resumes, "neighborhood", "Todas as regiões"),
     [resumes],
   );
 
@@ -152,18 +162,29 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
 
     return resumes.filter((resume) => {
       const matchesText = term
-        ? [resume.name, resume.phone, resume.email, resume.desired_role, resume.neighborhood, resume.experience]
+        ? [
+            resume.name,
+            resume.phone,
+            resume.email,
+            resume.desired_role,
+            resume.area,
+            resume.city,
+            resume.neighborhood,
+            resume.experience,
+          ]
             .join(" ")
             .toLowerCase()
             .includes(term)
         : true;
       const matchesRole =
         filters.desired_role === "all" || resume.desired_role === filters.desired_role;
+      const matchesArea = filters.area === "all" || resume.area === filters.area;
+      const matchesCity = filters.city === "all" || resume.city === filters.city;
       const matchesNeighborhood =
         filters.neighborhood === "all" || resume.neighborhood === filters.neighborhood;
       const matchesStatus = filters.status === "all" || resume.status === filters.status;
 
-      return matchesText && matchesRole && matchesNeighborhood && matchesStatus;
+      return matchesText && matchesRole && matchesArea && matchesCity && matchesNeighborhood && matchesStatus;
     });
   }, [filters, resumes]);
 
@@ -305,12 +326,32 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
             </select>
           </label>
           <label>
-            Bairro
+            Região
             <select
               value={filters.neighborhood}
               onChange={(event) => updateFilter("neighborhood", event.target.value)}
             >
               {neighborhoodOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Área
+            <select value={filters.area} onChange={(event) => updateFilter("area", event.target.value)}>
+              {areaOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Cidade
+            <select value={filters.city} onChange={(event) => updateFilter("city", event.target.value)}>
+              {cityOptions.map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -349,7 +390,10 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                   >
                     <span>
                       <strong>{resume.name}</strong>
-                      <small>{resume.desired_role} · {resume.neighborhood}</small>
+                      <small>
+                        {resume.desired_role} · {resume.area || "Área não informada"} ·{" "}
+                        {resume.city || resume.neighborhood}
+                      </small>
                     </span>
                     <span className="status-pill">{labelFor(resume.status)}</span>
                   </button>
@@ -380,6 +424,25 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                   >
                     Chamar no WhatsApp
                   </a>
+                  {selectedResume.resume_file_url ? (
+                    <div className="file-actions">
+                      <a
+                        className="button primary full"
+                        href={selectedResume.resume_file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Abrir currículo
+                      </a>
+                      <a
+                        className="button secondary full"
+                        href={selectedResume.resume_file_url}
+                        download={selectedResume.resume_file_name || "curriculo"}
+                      >
+                        Baixar currículo
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
 
                 <dl className="detail-list">
@@ -396,8 +459,20 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                     <dd>{selectedResume.desired_role}</dd>
                   </div>
                   <div>
-                    <dt>Bairro</dt>
+                    <dt>Área</dt>
+                    <dd>{selectedResume.area || "Não informada"}</dd>
+                  </div>
+                  <div>
+                    <dt>Cidade</dt>
+                    <dd>{selectedResume.city || "Não informada"}</dd>
+                  </div>
+                  <div>
+                    <dt>Bairro/região</dt>
                     <dd>{selectedResume.neighborhood}</dd>
+                  </div>
+                  <div>
+                    <dt>Arquivo</dt>
+                    <dd>{selectedResume.resume_file_name || "Sem anexo"}</dd>
                   </div>
                 </dl>
 

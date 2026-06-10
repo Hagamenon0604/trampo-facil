@@ -77,10 +77,18 @@ create table if not exists interviews (
   updated_at timestamptz not null default now()
 );
 
+alter table resumes add column if not exists area text;
+alter table resumes add column if not exists resume_file_path text;
+alter table resumes add column if not exists resume_file_name text;
+alter table resumes add column if not exists resume_file_type text;
+alter table resumes add column if not exists resume_file_size integer;
+
 create index if not exists jobs_status_created_at_idx on jobs(status, created_at desc);
 create index if not exists jobs_role_idx on jobs(role);
 create index if not exists resumes_status_created_at_idx on resumes(status, created_at desc);
 create index if not exists resumes_desired_role_idx on resumes(desired_role);
+create index if not exists resumes_area_idx on resumes(area);
+create index if not exists resumes_city_idx on resumes(city);
 create index if not exists applications_status_idx on applications(status);
 create index if not exists interviews_starts_at_idx on interviews(starts_at);
 
@@ -95,6 +103,27 @@ grant select on jobs to anon, authenticated;
 grant insert on resumes to anon, authenticated;
 grant all privileges on all tables in schema public to service_role;
 grant all privileges on all sequences in schema public to service_role;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'candidate-resumes',
+  'candidate-resumes',
+  false,
+  8388608,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ]
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Public can read published jobs" on jobs;
 create policy "Public can read published jobs"
