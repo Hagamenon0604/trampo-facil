@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createResume, getResumes, updateResumeFile, uploadResumeFile } from "@/lib/data";
 import { isAdminSessionValid } from "@/lib/admin-auth";
 import { cleanText, requireFields } from "@/lib/validators";
+import { sendNewResumeEmail } from "@/lib/email-notifications";
 
 const allowedResumeTypes = new Set([
   "application/pdf",
@@ -150,7 +151,15 @@ export async function POST(request) {
       }
     }
 
-    return NextResponse.json({ data: { ...resume, application: result.application } }, { status: 201 });
+    const emailNotification = await sendNewResumeEmail({
+      resume,
+      application: result.application,
+    }).catch((error) => ({ status: "failed", reason: error.message }));
+
+    return NextResponse.json(
+      { data: { ...resume, application: result.application, emailNotification } },
+      { status: 201 },
+    );
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

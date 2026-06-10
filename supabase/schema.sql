@@ -82,6 +82,20 @@ alter table resumes add column if not exists resume_file_path text;
 alter table resumes add column if not exists resume_file_name text;
 alter table resumes add column if not exists resume_file_type text;
 alter table resumes add column if not exists resume_file_size integer;
+alter table resumes add column if not exists favorite boolean not null default false;
+alter table resumes add column if not exists tags text[] not null default '{}';
+alter table resumes add column if not exists score_experience smallint;
+alter table resumes add column if not exists score_availability smallint;
+alter table resumes add column if not exists score_communication smallint;
+alter table resumes add column if not exists score_distance smallint;
+alter table resumes add column if not exists score_fit smallint;
+alter table resumes add column if not exists score_total integer generated always as (
+  coalesce(score_experience, 0) +
+  coalesce(score_availability, 0) +
+  coalesce(score_communication, 0) +
+  coalesce(score_distance, 0) +
+  coalesce(score_fit, 0)
+) stored;
 
 create index if not exists jobs_status_created_at_idx on jobs(status, created_at desc);
 create index if not exists jobs_role_idx on jobs(role);
@@ -89,6 +103,8 @@ create index if not exists resumes_status_created_at_idx on resumes(status, crea
 create index if not exists resumes_desired_role_idx on resumes(desired_role);
 create index if not exists resumes_area_idx on resumes(area);
 create index if not exists resumes_city_idx on resumes(city);
+create index if not exists resumes_favorite_idx on resumes(favorite);
+create index if not exists resumes_tags_idx on resumes using gin(tags);
 create index if not exists applications_status_idx on applications(status);
 create index if not exists interviews_starts_at_idx on interviews(starts_at);
 

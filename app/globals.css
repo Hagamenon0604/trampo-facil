@@ -626,6 +626,77 @@ label {
   padding-bottom: 28px;
 }
 
+.kanban-section {
+  background: var(--paper);
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+
+.kanban-board {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(6, minmax(170px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.kanban-column {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-width: 170px;
+  padding: 12px;
+}
+
+.kanban-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.kanban-heading span {
+  background: var(--paper);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 5px 8px;
+}
+
+.kanban-list {
+  display: grid;
+  gap: 8px;
+}
+
+.kanban-card {
+  background: var(--paper);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  text-align: left;
+}
+
+.kanban-card:hover,
+.kanban-card.active {
+  border-color: var(--tomato);
+}
+
+.kanban-card span {
+  font-weight: 800;
+}
+
+.kanban-card small,
+.kanban-more {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .admin-help-grid .admin-panel {
   background: var(--paper);
 }
@@ -752,6 +823,18 @@ label {
   color: var(--muted);
 }
 
+.row-actions {
+  align-items: flex-end;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.favorite-mark {
+  color: var(--tomato);
+  font-weight: 900;
+}
+
 .detail-header {
   align-items: start;
   display: flex;
@@ -763,6 +846,10 @@ label {
 .quick-actions {
   display: grid;
   gap: 10px;
+  margin-bottom: 14px;
+}
+
+.status-control {
   margin-bottom: 14px;
 }
 
@@ -827,9 +914,22 @@ label {
   line-height: 1.4;
 }
 
-.schedule-form {
+.schedule-form,
+.scorecard-form {
   border-top: 1px solid var(--line);
   padding-top: 16px;
+}
+
+.scorecard-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.score-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .schedule-item {
@@ -864,6 +964,7 @@ label {
   .trust-grid,
   .admin-help-grid,
   .job-application-list,
+  .score-grid,
   .forms-layout,
   .admin-grid,
   .admin-kpis,

@@ -31,6 +31,8 @@ const statusOptions = [
   ["hired", "Contratado"],
 ];
 
+const pipelineStatuses = statusOptions.filter(([value]) => value !== "all");
+
 const channelOptions = [
   ["online", "Online"],
   ["phone", "Telefone"],
@@ -60,6 +62,36 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function scoreTotal(resume) {
+  if (Number.isFinite(Number(resume?.score_total))) {
+    return Number(resume.score_total);
+  }
+
+  return [
+    resume?.score_experience,
+    resume?.score_availability,
+    resume?.score_communication,
+    resume?.score_distance,
+    resume?.score_fit,
+  ].reduce((total, value) => total + (Number(value) || 0), 0);
+}
+
+function fitLabel(total) {
+  if (total >= 21) {
+    return "Alto fit";
+  }
+
+  if (total >= 13) {
+    return "Médio fit";
+  }
+
+  return "Baixo fit";
+}
+
+function tagText(tags) {
+  return Array.isArray(tags) ? tags.join(", ") : tags || "";
 }
 
 function whatsappPhone(phone) {
@@ -107,9 +139,9 @@ function whatsappProfileUrl(resume) {
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
-async function submitJson(url, payload) {
+async function submitJson(url, payload, method = "POST") {
   const response = await fetch(url, {
-    method: "POST",
+    method,
     headers: {
       "Content-Type": "application/json",
     },
@@ -141,6 +173,7 @@ export function AdminDashboard({
     city: "all",
     neighborhood: "all",
     status: "all",
+    favorite: "all",
   });
   const [selectedResumeId, setSelectedResumeId] = useState(initialResumes[0]?.id || "");
   const [lastWhatsappUrl, setLastWhatsappUrl] = useState("");
@@ -214,6 +247,7 @@ export function AdminDashboard({
             resume.city,
             resume.neighborhood,
             resume.experience,
+            tagText(resume.tags),
           ]
             .join(" ")
             .toLowerCase()
@@ -231,6 +265,7 @@ export function AdminDashboard({
       const matchesNeighborhood =
         filters.neighborhood === "all" || resume.neighborhood === filters.neighborhood;
       const matchesStatus = filters.status === "all" || resume.status === filters.status;
+      const matchesFavorite = filters.favorite === "all" || Boolean(resume.favorite);
 
       return (
         matchesText &&
@@ -239,7 +274,8 @@ export function AdminDashboard({
         matchesArea &&
         matchesCity &&
         matchesNeighborhood &&
-        matchesStatus
+        matchesStatus &&
+        matchesFavorite
       );
     });
   }, [applicationsByResumeId, filters, resumes]);
@@ -266,6 +302,49 @@ export function AdminDashboard({
   function showToast(message) {
     setToast(message);
     window.setTimeout(() => setToast(""), 3200);
+  }
+
+  function mergeUpdatedResume(updatedResume) {
+    setResumes((current) =>
+      current.map((resume) =>
+        resume.id === updatedResume.id ? { ...resume, ...updatedResume } : resume,
+      ),
+    );
+  }
+
+  function handleResumeUpdate(resumeId, payload, successMessage = "Candidato atualizado.") {
+    startTransition(async () => {
+      try {
+        const updated = await submitJson(`/api/resumes/${resumeId}`, payload, "PATCH");
+        mergeUpdatedResume(updated);
+        showToast(successMessage);
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+  }
+
+  function handleProfileSubmit(event) {
+    event.preventDefault();
+
+    if (!selectedResume) {
+      return;
+    }
+
+    const formData = Object.fromEntries(new FormData(event.currentTarget).entries());
+    handleResumeUpdate(
+      selectedResume.id,
+      {
+        tags: formData.tags,
+        internal_notes: formData.internal_notes,
+        score_experience: formData.score_experience,
+        score_availability: formData.score_availability,
+        score_communication: formData.score_communication,
+        score_distance: formData.score_distance,
+        score_fit: formData.score_fit,
+      },
+      "Perfil atualizado.",
+    );
   }
 
   function handleSchedule(event) {
@@ -346,6 +425,51 @@ export function AdminDashboard({
         </div>
       </section>
 
+      <section className="section kanban-section">
+        <div className="section-heading compact">
+          <div>
+            <p className="eyebrow">Pipeline visual</p>
+            <h2>Kanban de candidatos</h2>
+          </div>
+        </div>
+        <div className="kanban-board">
+          {pipelineStatuses.map(([status, label]) => {
+            const statusResumes = filteredResumes.filter((resume) => resume.status === status);
+
+            return (
+              <article className="kanban-column" key={status}>
+                <div className="kanban-heading">
+                  <strong>{label}</strong>
+                  <span>{statusResumes.length}</span>
+                </div>
+                <div className="kanban-list">
+                  {statusResumes.slice(0, 8).map((resume) => (
+                    <button
+                      className={resume.id === selectedResume?.id ? "kanban-card active" : "kanban-card"}
+                      key={resume.id}
+                      type="button"
+                      onClick={() => setSelectedResumeId(resume.id)}
+                    >
+                      <span>
+                        {resume.favorite ? "★ " : ""}
+                        {resume.name}
+                      </span>
+                      <small>{resume.desired_role} · {resume.neighborhood}</small>
+                      {Array.isArray(resume.tags) && resume.tags.length ? (
+                        <small>{resume.tags.slice(0, 3).join(", ")}</small>
+                      ) : null}
+                    </button>
+                  ))}
+                  {statusResumes.length > 8 ? (
+                    <small className="kanban-more">+{statusResumes.length - 8} no filtro abaixo</small>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
       <section className="section admin-help-grid">
         <article className="admin-panel">
           <p className="eyebrow">Onde ver candidatos</p>
@@ -367,8 +491,8 @@ export function AdminDashboard({
           <p className="eyebrow">E-mail</p>
           <h2>Notificações pendentes</h2>
           <p>
-            O envio automático por e-mail ainda precisa de um provedor transacional configurado.
-            Hoje o painel centraliza os currículos e já apoia contato por WhatsApp.
+            O envio automático por e-mail fica ativo quando as variáveis do provedor são configuradas
+            na Vercel. Até lá, o painel centraliza os currículos e apoia contato por WhatsApp.
           </p>
         </article>
       </section>
@@ -497,6 +621,13 @@ export function AdminDashboard({
               ))}
             </select>
           </label>
+          <label>
+            Favoritos
+            <select value={filters.favorite} onChange={(event) => updateFilter("favorite", event.target.value)}>
+              <option value="all">Todos</option>
+              <option value="yes">Somente favoritos</option>
+            </select>
+          </label>
         </div>
 
         <div className="admin-columns">
@@ -528,8 +659,14 @@ export function AdminDashboard({
                       {(applicationsByResumeId.get(resume.id) || []).length ? (
                         <small>{(applicationsByResumeId.get(resume.id) || []).length} candidatura(s)</small>
                       ) : null}
+                      {Array.isArray(resume.tags) && resume.tags.length ? (
+                        <small>{resume.tags.slice(0, 4).join(", ")}</small>
+                      ) : null}
                     </span>
-                    <span className="status-pill">{labelFor(resume.status)}</span>
+                    <span className="row-actions">
+                      {resume.favorite ? <span className="favorite-mark">★</span> : null}
+                      <span className="status-pill">{labelFor(resume.status)}</span>
+                    </span>
                   </button>
                 ))
               ) : (
@@ -577,7 +714,41 @@ export function AdminDashboard({
                       </a>
                     </div>
                   ) : null}
+                  <button
+                    className={selectedResume.favorite ? "button primary full" : "button secondary full"}
+                    type="button"
+                    onClick={() =>
+                      handleResumeUpdate(
+                        selectedResume.id,
+                        { favorite: !selectedResume.favorite },
+                        selectedResume.favorite ? "Favorito removido." : "Candidato favoritado.",
+                      )
+                    }
+                    disabled={isPending}
+                  >
+                    {selectedResume.favorite ? "Remover favorito" : "Favoritar candidato"}
+                  </button>
                 </div>
+
+                <label className="status-control">
+                  Etapa do pipeline
+                  <select
+                    value={selectedResume.status}
+                    onChange={(event) =>
+                      handleResumeUpdate(
+                        selectedResume.id,
+                        { status: event.target.value },
+                        `Candidato movido para ${labelFor(event.target.value)}.`,
+                      )
+                    }
+                  >
+                    {pipelineStatuses.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
                 <dl className="detail-list">
                   <div>
@@ -608,6 +779,12 @@ export function AdminDashboard({
                     <dt>Arquivo</dt>
                     <dd>{selectedResume.resume_file_name || "Sem anexo"}</dd>
                   </div>
+                  <div>
+                    <dt>Score</dt>
+                    <dd>
+                      {scoreTotal(selectedResume)}/25 · {fitLabel(scoreTotal(selectedResume))}
+                    </dd>
+                  </div>
                 </dl>
 
                 <div className="experience-box">
@@ -632,6 +809,85 @@ export function AdminDashboard({
                     <p>Candidato salvo no banco de talentos, sem vaga específica vinculada.</p>
                   )}
                 </div>
+
+                <form className="scorecard-form" key={selectedResume.id} onSubmit={handleProfileSubmit}>
+                  <div className="form-heading compact">
+                    <p className="eyebrow">Triagem</p>
+                    <h3>Scorecard e tags</h3>
+                  </div>
+                  <label>
+                    Tags
+                    <input
+                      name="tags"
+                      defaultValue={tagText(selectedResume.tags)}
+                      placeholder="Ex.: freelancer, cozinha, urgente"
+                    />
+                  </label>
+                  <div className="score-grid">
+                    <label>
+                      Experiência
+                      <input
+                        name="score_experience"
+                        type="number"
+                        min="0"
+                        max="5"
+                        defaultValue={selectedResume.score_experience || ""}
+                      />
+                    </label>
+                    <label>
+                      Disponibilidade
+                      <input
+                        name="score_availability"
+                        type="number"
+                        min="0"
+                        max="5"
+                        defaultValue={selectedResume.score_availability || ""}
+                      />
+                    </label>
+                    <label>
+                      Comunicação
+                      <input
+                        name="score_communication"
+                        type="number"
+                        min="0"
+                        max="5"
+                        defaultValue={selectedResume.score_communication || ""}
+                      />
+                    </label>
+                    <label>
+                      Distância
+                      <input
+                        name="score_distance"
+                        type="number"
+                        min="0"
+                        max="5"
+                        defaultValue={selectedResume.score_distance || ""}
+                      />
+                    </label>
+                    <label>
+                      Aderência
+                      <input
+                        name="score_fit"
+                        type="number"
+                        min="0"
+                        max="5"
+                        defaultValue={selectedResume.score_fit || ""}
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    Observações internas
+                    <textarea
+                      name="internal_notes"
+                      rows="3"
+                      defaultValue={selectedResume.internal_notes || ""}
+                      placeholder="Histórico de contato, impressão da triagem e próximos passos"
+                    />
+                  </label>
+                  <button className="button dark full" type="submit" disabled={isPending}>
+                    Salvar triagem
+                  </button>
+                </form>
 
                 <form className="schedule-form" onSubmit={handleSchedule}>
                   <div className="form-heading compact">
