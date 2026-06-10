@@ -21,6 +21,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const payload = {
+      job_id: cleanText(body.job_id),
       name: cleanText(body.name),
       phone: cleanText(body.phone),
       email: cleanText(body.email),

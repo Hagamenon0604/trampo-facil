@@ -331,6 +331,27 @@ button:disabled {
   line-height: 1.55;
 }
 
+.selected-job {
+  align-items: center;
+  background: var(--white);
+  border: 1px solid rgba(31, 157, 122, 0.38);
+  border-radius: 8px;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 14px;
+}
+
+.selected-job div {
+  display: grid;
+  gap: 5px;
+}
+
+.selected-job span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .forms-layout {
   background: var(--white);
   display: grid;

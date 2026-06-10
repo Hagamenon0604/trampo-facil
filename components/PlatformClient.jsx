@@ -38,6 +38,8 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
   const [jobs, setJobs] = useState(initialJobs.map(normalizeJob));
   const [resumeCount, setResumeCount] = useState(initialResumeCount);
   const [query, setQuery] = useState("");
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [desiredRole, setDesiredRole] = useState("");
   const [toast, setToast] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -83,17 +85,32 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     data.lgpd_accepted = formData.get("lgpd_accepted") === "on";
+    data.job_id = selectedJob?.id || "";
 
     startTransition(async () => {
       try {
         await submitJson("/api/resumes", data);
         setResumeCount((currentCount) => currentCount + 1);
         form.reset();
-        showToast("Currículo cadastrado com sucesso.");
+        setSelectedJob(null);
+        setDesiredRole("");
+        showToast(
+          data.job_id
+            ? "Candidatura enviada com sucesso para essa vaga."
+            : "Currículo cadastrado com sucesso.",
+        );
       } catch (error) {
         showToast(error.message);
       }
     });
+  }
+
+  function handleApplyClick(job) {
+    setSelectedJob(job);
+    setDesiredRole(job.role);
+    window.setTimeout(() => {
+      document.getElementById("curriculos")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   }
 
   return (
@@ -160,6 +177,9 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
                   </span>
                 </div>
                 <p className="card-description">{job.description}</p>
+                <button className="button primary full" type="button" onClick={() => handleApplyClick(job)}>
+                  Candidatar-se
+                </button>
               </article>
             ))
           ) : (
@@ -233,8 +253,29 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
         <form className="panel accent" id="curriculos" onSubmit={handleResumeSubmit}>
           <div className="form-heading">
             <p className="eyebrow">Para candidatos</p>
-            <h2>Cadastrar currículo</h2>
+            <h2>{selectedJob ? "Candidatar-se à vaga" : "Cadastrar currículo"}</h2>
           </div>
+
+          {selectedJob ? (
+            <div className="selected-job">
+              <div>
+                <strong>{selectedJob.role}</strong>
+                <span>{selectedJob.company} · {selectedJob.neighborhood}</span>
+              </div>
+              <button
+                className="button secondary"
+                type="button"
+                onClick={() => {
+                  setSelectedJob(null);
+                  setDesiredRole("");
+                }}
+              >
+                Trocar
+              </button>
+            </div>
+          ) : null}
+
+          <input name="job_id" type="hidden" value={selectedJob?.id || ""} readOnly />
 
           <div className="field-group two-columns">
             <label>
@@ -254,7 +295,13 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
             </label>
             <label>
               Cargo desejado
-              <input name="desired_role" required placeholder="Ex.: Cozinheira" />
+              <input
+                name="desired_role"
+                required
+                value={desiredRole}
+                onChange={(event) => setDesiredRole(event.target.value)}
+                placeholder="Ex.: Cozinheira"
+              />
             </label>
           </div>
 
