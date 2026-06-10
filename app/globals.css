@@ -617,6 +617,30 @@ label {
   gap: 18px;
 }
 
+.admin-help-grid {
+  background: var(--white);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+
+.admin-help-grid .admin-panel {
+  background: var(--paper);
+}
+
+.admin-help-grid h2 {
+  font-size: 1.28rem;
+  margin-bottom: 8px;
+}
+
+.admin-help-grid p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
 .integration-strip {
   align-items: center;
   background: var(--white);
@@ -646,7 +670,7 @@ label {
   border-radius: 8px;
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(240px, 1.6fr) repeat(5, minmax(140px, 1fr));
+  grid-template-columns: minmax(240px, 1.6fr) minmax(220px, 1.4fr) repeat(5, minmax(130px, 1fr));
   padding: 16px;
 }
 
@@ -679,7 +703,19 @@ label {
   gap: 10px;
 }
 
-.candidate-row {
+.jobs-overview {
+  display: grid;
+  gap: 14px;
+}
+
+.job-application-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.candidate-row,
+.job-application-row {
   align-items: center;
   background: var(--white);
   border: 1px solid var(--line);
@@ -695,18 +731,22 @@ label {
 }
 
 .candidate-row:hover,
-.candidate-row.active {
+.candidate-row.active,
+.job-application-row:hover,
+.job-application-row.active {
   border-color: var(--tomato);
   box-shadow: 0 10px 28px rgba(232, 79, 53, 0.1);
 }
 
-.candidate-row span:first-child {
+.candidate-row span:first-child,
+.job-application-row span:first-child {
   display: grid;
   gap: 5px;
   min-width: 0;
 }
 
 .candidate-row small,
+.job-application-row small,
 .schedule-item small,
 .schedule-item span {
   color: var(--muted);
@@ -776,6 +816,17 @@ label {
   margin: 0;
 }
 
+.application-links {
+  display: grid;
+  gap: 7px;
+}
+
+.application-links span {
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .schedule-form {
   border-top: 1px solid var(--line);
   padding-top: 16px;
@@ -811,6 +862,8 @@ label {
   .job-grid,
   .resume-grid,
   .trust-grid,
+  .admin-help-grid,
+  .job-application-list,
   .forms-layout,
   .admin-grid,
   .admin-kpis,

@@ -124,11 +124,18 @@ async function submitJson(url, payload) {
   return result.data;
 }
 
-export function AdminDashboard({ initialJobs, initialResumes, initialInterviews, databaseConfigured }) {
+export function AdminDashboard({
+  initialJobs,
+  initialResumes,
+  initialInterviews,
+  initialApplications = [],
+  databaseConfigured,
+}) {
   const [resumes, setResumes] = useState(initialResumes);
   const [interviews, setInterviews] = useState(initialInterviews);
   const [filters, setFilters] = useState({
     query: "",
+    job_id: "all",
     desired_role: "all",
     area: "all",
     city: "all",
@@ -139,6 +146,42 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
   const [lastWhatsappUrl, setLastWhatsappUrl] = useState("");
   const [toast, setToast] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const applicationsByResumeId = useMemo(() => {
+    return initialApplications.reduce((map, application) => {
+      const resumeId = application.resume_id;
+
+      if (!resumeId) {
+        return map;
+      }
+
+      map.set(resumeId, [...(map.get(resumeId) || []), application]);
+      return map;
+    }, new Map());
+  }, [initialApplications]);
+
+  const applicationCountByJobId = useMemo(() => {
+    return initialApplications.reduce((map, application) => {
+      const jobId = application.job_id;
+
+      if (jobId) {
+        map.set(jobId, (map.get(jobId) || 0) + 1);
+      }
+
+      return map;
+    }, new Map());
+  }, [initialApplications]);
+
+  const jobOptions = useMemo(
+    () => [
+      ["all", "Todas as vagas"],
+      ...initialJobs.map((job) => [
+        job.id,
+        `${job.role} · ${job.company} (${labelFor(job.status)})`,
+      ]),
+    ],
+    [initialJobs],
+  );
 
   const roleOptions = useMemo(
     () => uniqueOptions(resumes, "desired_role", "Todos os cargos"),
@@ -178,18 +221,34 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
         : true;
       const matchesRole =
         filters.desired_role === "all" || resume.desired_role === filters.desired_role;
+      const matchesJob =
+        filters.job_id === "all" ||
+        (applicationsByResumeId.get(resume.id) || []).some(
+          (application) => application.job_id === filters.job_id,
+        );
       const matchesArea = filters.area === "all" || resume.area === filters.area;
       const matchesCity = filters.city === "all" || resume.city === filters.city;
       const matchesNeighborhood =
         filters.neighborhood === "all" || resume.neighborhood === filters.neighborhood;
       const matchesStatus = filters.status === "all" || resume.status === filters.status;
 
-      return matchesText && matchesRole && matchesArea && matchesCity && matchesNeighborhood && matchesStatus;
+      return (
+        matchesText &&
+        matchesJob &&
+        matchesRole &&
+        matchesArea &&
+        matchesCity &&
+        matchesNeighborhood &&
+        matchesStatus
+      );
     });
-  }, [filters, resumes]);
+  }, [applicationsByResumeId, filters, resumes]);
 
   const selectedResume =
-    resumes.find((resume) => resume.id === selectedResumeId) || filteredResumes[0] || resumes[0];
+    filteredResumes.find((resume) => resume.id === selectedResumeId) || filteredResumes[0] || null;
+  const selectedResumeApplications = selectedResume
+    ? applicationsByResumeId.get(selectedResume.id) || []
+    : [];
 
   const upcomingInterviews = useMemo(
     () =>
@@ -274,6 +333,10 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
           <strong>{initialJobs.length}</strong>
         </div>
         <div>
+          <span>Candidaturas</span>
+          <strong>{initialApplications.length}</strong>
+        </div>
+        <div>
           <span>Candidatos</span>
           <strong>{resumes.length}</strong>
         </div>
@@ -281,10 +344,33 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
           <span>Em entrevista</span>
           <strong>{resumes.filter((resume) => resume.status === "interview").length}</strong>
         </div>
-        <div>
-          <span>Agenda</span>
-          <strong>{interviews.length}</strong>
-        </div>
+      </section>
+
+      <section className="section admin-help-grid">
+        <article className="admin-panel">
+          <p className="eyebrow">Onde ver candidatos</p>
+          <h2>Candidaturas por vaga</h2>
+          <p>
+            Use o filtro <strong>Vaga</strong> para ver apenas candidatos que clicaram em uma
+            oportunidade específica. Sem esse filtro, a lista vira banco geral de currículos.
+          </p>
+        </article>
+        <article className="admin-panel">
+          <p className="eyebrow">Currículos recebidos</p>
+          <h2>Banco de talentos</h2>
+          <p>
+            Clique em um candidato para abrir o perfil. Se ele anexou arquivo, os botões
+            <strong> Abrir currículo</strong> e <strong>Baixar currículo</strong> aparecem no detalhe.
+          </p>
+        </article>
+        <article className="admin-panel">
+          <p className="eyebrow">E-mail</p>
+          <h2>Notificações pendentes</h2>
+          <p>
+            O envio automático por e-mail ainda precisa de um provedor transacional configurado.
+            Hoje o painel centraliza os currículos e já apoia contato por WhatsApp.
+          </p>
+        </article>
       </section>
 
       <section className="section integration-strip">
@@ -302,6 +388,39 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
       </section>
 
       <section className="section admin-workspace">
+        <div className="admin-panel jobs-overview">
+          <div className="section-heading compact">
+            <div>
+              <p className="eyebrow">Vagas publicadas</p>
+              <h2>Candidatos por vaga</h2>
+            </div>
+          </div>
+          <div className="job-application-list">
+            {initialJobs.length ? (
+              initialJobs.map((job) => {
+                const total = applicationCountByJobId.get(job.id) || 0;
+
+                return (
+                  <button
+                    className={filters.job_id === job.id ? "job-application-row active" : "job-application-row"}
+                    key={job.id}
+                    type="button"
+                    onClick={() => updateFilter("job_id", filters.job_id === job.id ? "all" : job.id)}
+                  >
+                    <span>
+                      <strong>{job.role}</strong>
+                      <small>{job.company} · {job.neighborhood} · {labelFor(job.status)}</small>
+                    </span>
+                    <span className="status-pill">{total} candidato{total === 1 ? "" : "s"}</span>
+                  </button>
+                );
+              })
+            ) : (
+              <p className="empty">Nenhuma vaga cadastrada ainda.</p>
+            )}
+          </div>
+        </div>
+
         <div className="admin-toolbar">
           <label>
             Buscar
@@ -311,6 +430,16 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
               onChange={(event) => updateFilter("query", event.target.value)}
               placeholder="Nome, telefone, cargo ou experiência"
             />
+          </label>
+          <label>
+            Vaga
+            <select value={filters.job_id} onChange={(event) => updateFilter("job_id", event.target.value)}>
+              {jobOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Cargo
@@ -374,7 +503,9 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
           <div className="admin-panel candidate-panel">
             <div className="section-heading compact">
               <div>
-                <p className="eyebrow">Candidatos</p>
+                <p className="eyebrow">
+                  {filters.job_id === "all" ? "Banco de currículos" : "Candidatos da vaga"}
+                </p>
                 <h2>{filteredResumes.length} encontrados</h2>
               </div>
             </div>
@@ -394,6 +525,9 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
                         {resume.desired_role} · {resume.area || "Área não informada"} ·{" "}
                         {resume.city || resume.neighborhood}
                       </small>
+                      {(applicationsByResumeId.get(resume.id) || []).length ? (
+                        <small>{(applicationsByResumeId.get(resume.id) || []).length} candidatura(s)</small>
+                      ) : null}
                     </span>
                     <span className="status-pill">{labelFor(resume.status)}</span>
                   </button>
@@ -478,7 +612,25 @@ export function AdminDashboard({ initialJobs, initialResumes, initialInterviews,
 
                 <div className="experience-box">
                   <strong>Experiência</strong>
-                  <p>{selectedResume.experience}</p>
+                  <p>{selectedResume.experience || "Não preenchida. Verifique o currículo anexado."}</p>
+                </div>
+
+                <div className="experience-box">
+                  <strong>Vagas em que se candidatou</strong>
+                  {selectedResumeApplications.length ? (
+                    <div className="application-links">
+                      {selectedResumeApplications.map((application) => (
+                        <span key={application.id}>
+                          {application.jobs
+                            ? `${application.jobs.role} · ${application.jobs.company}`
+                            : "Vaga não localizada"}{" "}
+                          · {labelFor(application.status)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>Candidato salvo no banco de talentos, sem vaga específica vinculada.</p>
+                  )}
                 </div>
 
                 <form className="schedule-form" onSubmit={handleSchedule}>

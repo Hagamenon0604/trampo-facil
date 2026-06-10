@@ -1,12 +1,13 @@
 import { Header } from "@/components/Header";
 import { AdminDashboard } from "@/components/AdminDashboard";
-import { getInterviews, getJobs, getPlatformStatus, getResumes } from "@/lib/data";
+import { getApplications, getInterviews, getJobs, getPlatformStatus, getResumes } from "@/lib/data";
 
 export default async function AdminPage() {
-  const [jobs, resumes, interviews] = await Promise.all([
+  const [jobs, resumes, interviews, applications] = await Promise.all([
     getJobs({ includeDrafts: true }),
     getResumes(),
     getInterviews(),
+    getApplications(),
   ]);
   const status = getPlatformStatus();
 
@@ -28,6 +29,7 @@ export default async function AdminPage() {
         initialJobs={jobs}
         initialResumes={resumes}
         initialInterviews={interviews}
+        initialApplications={applications}
         databaseConfigured={status.databaseConfigured}
       />
     </main>
