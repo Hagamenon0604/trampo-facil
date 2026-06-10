@@ -19,6 +19,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 112px;
 }
 
 body {
@@ -357,6 +358,12 @@ button:disabled {
   display: grid;
   gap: 24px;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+#vagas,
+#empresas,
+#curriculos {
+  scroll-margin-top: 112px;
 }
 
 .panel {
