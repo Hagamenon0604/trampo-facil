@@ -30,6 +30,19 @@ Construir a melhor plataforma brasileira de vagas para bares, restaurantes e foo
   - `SUPABASE_SERVICE_ROLE_KEY`
 - Testar envio de vaga e curriculo em producao.
 
+## Notificacoes de novos curriculos
+
+O envio de e-mail para a operacao A&S acontece quando um candidato cadastra curriculo ou se candidata a uma vaga.
+
+Variaveis necessarias na Vercel:
+
+- `RESEND_API_KEY`: chave da conta Resend.
+- `ADMIN_NOTIFY_EMAIL`: e-mail que recebe os avisos. Aceita mais de um e-mail separado por virgula.
+- `NOTIFY_FROM_EMAIL`: remetente validado no Resend.
+- `NEXT_PUBLIC_APP_URL`: `https://vagas.aesgestao.com`.
+
+Se as variaveis nao estiverem configuradas, o cadastro continua funcionando normalmente e apenas pula o envio de e-mail.
+
 ## Fase 3 - Operacao A&S
 
 - Login admin.

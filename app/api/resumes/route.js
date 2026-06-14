@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createResume, getResumes, updateResumeFile, uploadResumeFile } from "@/lib/data";
+import { createResume, getJobs, getResumes, updateResumeFile, uploadResumeFile } from "@/lib/data";
 import { isAdminSessionValid } from "@/lib/admin-auth";
 import { cleanText, requireFields } from "@/lib/validators";
 import { sendNewResumeEmail } from "@/lib/email-notifications";
@@ -151,9 +151,12 @@ export async function POST(request) {
       }
     }
 
+    const jobs = payload.job_id ? await getJobs({ includeDrafts: true }) : [];
+    const relatedJob = jobs.find((job) => job.id === payload.job_id);
     const emailNotification = await sendNewResumeEmail({
       resume,
       application: result.application,
+      job: relatedJob,
     }).catch((error) => ({ status: "failed", reason: error.message }));
 
     return NextResponse.json(
