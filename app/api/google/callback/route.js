@@ -72,7 +72,7 @@ export async function GET(request) {
       body: `<h1>Google conectado</h1>
 <p>Copie este valor para a variável <strong>GOOGLE_REFRESH_TOKEN</strong> na Vercel e faça um redeploy.</p>
 <pre>${refreshToken}</pre>
-<p>Depois disso, cada entrevista online poderá criar um evento no Google Agenda com link único do Meet.</p>
+<p>Depois disso, cada entrevista online poderá criar um evento no Google Agenda com link único do Meet e cada novo currículo poderá gerar uma notificação por e-mail.</p>
 <p><a href="/admin">Voltar ao painel</a></p>`,
     });
   } catch (caughtError) {
