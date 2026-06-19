@@ -695,11 +695,11 @@ export function AdminDashboard({
                   >
                     Chamar no WhatsApp
                   </a>
-                  {selectedResume.resume_file_url ? (
+                  {selectedResume.resume_file_path || selectedResume.resume_file_url ? (
                     <div className="file-actions">
                       <a
                         className="button primary full"
-                        href={selectedResume.resume_file_url}
+                        href={`/api/resumes/${selectedResume.id}/file`}
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -707,13 +707,14 @@ export function AdminDashboard({
                       </a>
                       <a
                         className="button secondary full"
-                        href={selectedResume.resume_file_url}
-                        download={selectedResume.resume_file_name || "curriculo"}
+                        href={`/api/resumes/${selectedResume.id}/file?download=1`}
                       >
                         Baixar currículo
                       </a>
                     </div>
-                  ) : null}
+                  ) : (
+                    <p className="empty">Este candidato não anexou um arquivo de currículo.</p>
+                  )}
                   <button
                     className={selectedResume.favorite ? "button primary full" : "button secondary full"}
                     type="button"
