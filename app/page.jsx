@@ -5,7 +5,8 @@ import { getJobs, getPlatformStatus, getResumeCount } from "@/lib/data";
 export default async function HomePage({ searchParams }) {
   const [jobs, resumeCount] = await Promise.all([getJobs(), getResumeCount()]);
   const status = getPlatformStatus();
-  const embedMode = searchParams?.embed === "1";
+  const resolvedSearchParams = await searchParams;
+  const embedMode = resolvedSearchParams?.embed === "1";
 
   return (
     <main className={embedMode ? "embed-surface" : ""}>
