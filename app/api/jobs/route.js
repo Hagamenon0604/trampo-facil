@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createJob, getJobs } from "@/lib/data";
 import { cleanText, requireFields } from "@/lib/validators";
+import { requestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function GET() {
   try {
@@ -14,6 +15,22 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
+
+    if (cleanText(body.website)) {
+      return NextResponse.json({ error: "Não foi possível validar o envio." }, { status: 400 });
+    }
+
+    const captcha = await verifyTurnstileToken({
+      token: cleanText(body["cf-turnstile-response"]),
+      remoteIp: requestIp(request),
+    });
+
+    if (!captcha.success) {
+      return NextResponse.json(
+        { error: "Confirme a verificação de segurança e tente novamente." },
+        { status: 400 },
+      );
+    }
     const payload = {
       company: cleanText(body.company),
       role: cleanText(body.role),

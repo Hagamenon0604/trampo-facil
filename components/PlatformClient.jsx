@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 function formatDate(dateText) {
   const date = new Date(dateText);
@@ -54,6 +55,9 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
   const [query, setQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
   const [desiredRole, setDesiredRole] = useState("");
+  const [selectedFileName, setSelectedFileName] = useState("");
+  const [activeSubmit, setActiveSubmit] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [toast, setToast] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -81,6 +85,7 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
 
+    setActiveSubmit("job");
     startTransition(async () => {
       try {
         const created = await submitJson("/api/jobs", data);
@@ -89,6 +94,9 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
         showToast("Vaga publicada com sucesso.");
       } catch (error) {
         showToast(error.message);
+      } finally {
+        setActiveSubmit("");
+        setCaptchaResetKey((current) => current + 1);
       }
     });
   }
@@ -100,6 +108,7 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     formData.set("lgpd_accepted", formData.get("lgpd_accepted") === "on" ? "true" : "");
     formData.set("job_id", selectedJob?.id || "");
 
+    setActiveSubmit("resume");
     startTransition(async () => {
       try {
         await submitFormData("/api/resumes", formData);
@@ -107,6 +116,7 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
         form.reset();
         setSelectedJob(null);
         setDesiredRole("");
+        setSelectedFileName("");
         showToast(
           selectedJob?.id
             ? "Candidatura enviada com sucesso para essa vaga."
@@ -114,6 +124,9 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
         );
       } catch (error) {
         showToast(error.message);
+      } finally {
+        setActiveSubmit("");
+        setCaptchaResetKey((current) => current + 1);
       }
     });
   }
@@ -202,7 +215,7 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
       </section>
 
       <section className="section forms-layout">
-        <form className="panel" id="empresas" onSubmit={handleJobSubmit}>
+        <form className="panel" id="empresas" onSubmit={handleJobSubmit} aria-busy={activeSubmit === "job"}>
           <div className="form-heading">
             <p className="eyebrow">Para estabelecimentos</p>
             <h2>Cadastrar vaga</h2>
@@ -211,7 +224,7 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
           <div className="field-group two-columns">
             <label>
               Nome do bar ou restaurante
-              <input name="company" required placeholder="Ex.: Boteco Central" />
+              <input name="company" required autoComplete="organization" placeholder="Ex.: Boteco Central" />
             </label>
             <label>
               Cargo
@@ -244,7 +257,13 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
             </label>
             <label>
               Contato
-              <input name="contact" required placeholder="WhatsApp ou e-mail" />
+              <input
+                name="contact"
+                required
+                autoComplete="email"
+                inputMode="email"
+                placeholder="WhatsApp ou e-mail"
+              />
             </label>
           </div>
 
@@ -258,12 +277,24 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
             />
           </label>
 
+          <label className="honeypot" aria-hidden="true">
+            Não preencha este campo
+            <input name="website" tabIndex="-1" autoComplete="off" />
+          </label>
+
+          <TurnstileWidget action="job_submission" resetKey={`job-${captchaResetKey}`} />
+
           <button className="button primary full" type="submit" disabled={isPending}>
-            Publicar vaga
+            {activeSubmit === "job" ? "Publicando..." : "Publicar vaga"}
           </button>
         </form>
 
-        <form className="panel accent" id="curriculos" onSubmit={handleResumeSubmit}>
+        <form
+          className="panel accent"
+          id="curriculos"
+          onSubmit={handleResumeSubmit}
+          aria-busy={activeSubmit === "resume"}
+        >
           <div className="form-heading">
             <p className="eyebrow">Para candidatos</p>
             <h2>{selectedJob ? "Candidatar-se à vaga" : "Cadastrar currículo"}</h2>
@@ -293,18 +324,33 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
           <div className="field-group two-columns">
             <label>
               Nome completo
-              <input name="name" required placeholder="Seu nome" />
+              <input name="name" required autoComplete="name" enterKeyHint="next" placeholder="Seu nome" />
             </label>
             <label>
               Telefone
-              <input name="phone" required placeholder="WhatsApp" />
+              <input
+                name="phone"
+                required
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                enterKeyHint="next"
+                placeholder="WhatsApp com DDD"
+              />
             </label>
           </div>
 
           <div className="field-group two-columns">
             <label>
               E-mail
-              <input name="email" type="email" placeholder="email@exemplo.com" />
+              <input
+                name="email"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                enterKeyHint="next"
+                placeholder="email@exemplo.com"
+              />
             </label>
             <label>
               Cargo desejado
@@ -334,14 +380,26 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
             </label>
             <label>
               Cidade
-              <input name="city" required placeholder="Ex.: São Paulo" />
+              <input
+                name="city"
+                required
+                autoComplete="address-level2"
+                enterKeyHint="next"
+                placeholder="Ex.: São Paulo"
+              />
             </label>
           </div>
 
           <div className="field-group two-columns">
             <label>
               Bairro ou região
-              <input name="neighborhood" required placeholder="Ex.: Zona Sul, Pinheiros" />
+              <input
+                name="neighborhood"
+                required
+                autoComplete="address-level3"
+                enterKeyHint="next"
+                placeholder="Ex.: Zona Sul, Pinheiros"
+              />
             </label>
             <label>
               Disponibilidade
@@ -349,13 +407,17 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
             </label>
           </div>
 
-          <label>
+          <label className="file-field">
             Anexar currículo
             <input
               name="resume_file"
               type="file"
               accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp"
+              onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name || "")}
             />
+            <span className="field-help">
+              {selectedFileName || "PDF, Word ou imagem de até 8 MB. Você também pode usar a câmera do celular."}
+            </span>
           </label>
 
           <label>
@@ -369,12 +431,28 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
 
           <label className="checkbox-field">
             <input name="lgpd_accepted" type="checkbox" required />
-            <span>Autorizo a A&S Gestão a tratar meus dados para processos seletivos.</span>
+            <span>
+              Autorizo a A&S Gestão a tratar meus dados para processos seletivos, conforme a{" "}
+              <a href="/privacidade" target="_blank">Política de Privacidade</a> e os{" "}
+              <a href="/termos" target="_blank">Termos de Uso</a>.
+            </span>
           </label>
 
+          <label className="honeypot" aria-hidden="true">
+            Não preencha este campo
+            <input name="website" tabIndex="-1" autoComplete="off" />
+          </label>
+
+          <TurnstileWidget action="resume_submission" resetKey={`resume-${captchaResetKey}`} />
+
           <button className="button dark full" type="submit" disabled={isPending}>
-            Enviar currículo
+            {activeSubmit === "resume" ? "Enviando currículo..." : "Enviar currículo"}
           </button>
+          {activeSubmit === "resume" ? (
+            <p className="submit-help" role="status">
+              Aguarde enquanto salvamos seus dados e o arquivo. Não feche esta página.
+            </p>
+          ) : null}
         </form>
       </section>
 
@@ -412,6 +490,13 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
           </article>
         </div>
       </section>
+
+      <footer className="site-footer">
+        <span>© 2026 A&S Gestão de Pessoas</span>
+        <a href="/privacidade">Política de Privacidade</a>
+        <a href="/termos">Termos de Uso</a>
+        <a href="mailto:andrea@aesgestao.com">Contato</a>
+      </footer>
 
       <div className={`toast ${toast ? "visible" : ""}`} role="status" aria-live="polite">
         {toast}

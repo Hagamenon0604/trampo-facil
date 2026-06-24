@@ -18,6 +18,7 @@
 }
 
 html {
+  overflow-x: hidden;
   scroll-behavior: smooth;
   scroll-padding-top: 112px;
 }
@@ -27,6 +28,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
 }
 
 a {
@@ -80,6 +82,10 @@ a {
 
 .nav a:hover {
   color: var(--tomato);
+}
+
+.mobile-label {
+  display: none;
 }
 
 .hero {
@@ -389,6 +395,93 @@ label {
   font-size: 0.92rem;
   font-weight: 800;
   gap: 8px;
+}
+
+.field-help,
+.submit-help {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.file-field input {
+  cursor: pointer;
+}
+
+.checkbox-field a,
+.legal-content a {
+  color: var(--tomato-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.honeypot {
+  height: 1px;
+  left: -10000px;
+  overflow: hidden;
+  position: absolute;
+  top: auto;
+  width: 1px;
+}
+
+.turnstile-container {
+  min-height: 65px;
+  width: 100%;
+}
+
+.site-footer {
+  align-items: center;
+  background: var(--navy);
+  color: var(--white);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  justify-content: center;
+  padding: 24px clamp(18px, 4vw, 56px);
+}
+
+.site-footer a {
+  color: #dfe6f3;
+  font-weight: 700;
+}
+
+.legal-page {
+  margin: 0 auto;
+  max-width: 900px;
+  padding: clamp(44px, 7vw, 84px) clamp(18px, 4vw, 40px);
+}
+
+.legal-page header {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+}
+
+.legal-page h1 {
+  font-size: clamp(2.3rem, 7vw, 4.5rem);
+  line-height: 1;
+}
+
+.legal-updated {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.legal-content {
+  display: grid;
+  gap: 28px;
+}
+
+.legal-content h2 {
+  font-size: 1.35rem;
+  margin-bottom: 10px;
+}
+
+.legal-content p {
+  color: var(--muted);
+  line-height: 1.75;
+  margin-bottom: 0;
 }
 
 .checkbox-field {
@@ -987,16 +1080,46 @@ label {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .nav a:nth-child(2),
+  .nav a:nth-child(4) {
+    display: none;
+  }
+
+  .desktop-label {
+    display: none;
+  }
+
+  .mobile-label {
+    display: inline;
+  }
 }
 
 @media (max-width: 720px) {
   .topbar {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-height: 74px;
+    padding: 8px 14px;
   }
 
   .nav {
-    justify-content: flex-start;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+
+  .nav a {
+    font-size: 0.82rem;
+  }
+
+  .brand {
+    font-size: 0.92rem;
+    gap: 9px;
+  }
+
+  .brand-logo {
+    height: 50px;
+    width: 50px;
   }
 
   .hero {
@@ -1015,6 +1138,40 @@ label {
   .detail-list,
   .file-actions {
     grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .panel {
+    gap: 16px;
+    padding: 20px 16px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 52px;
+  }
+
+  input[type="file"] {
+    min-height: 58px;
+  }
+
+  .button {
+    min-height: 52px;
+  }
+
+  .checkbox-field {
+    font-size: 0.88rem;
+  }
+
+  .site-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

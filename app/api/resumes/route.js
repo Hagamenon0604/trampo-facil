@@ -4,6 +4,8 @@ import { createResume, getJobs, getResumes, updateResumeFile, uploadResumeFile }
 import { isAdminSessionValid } from "@/lib/admin-auth";
 import { cleanText, requireFields } from "@/lib/validators";
 import { sendNewResumeEmail } from "@/lib/email-notifications";
+import { sendCandidateConfirmationEmail } from "@/lib/email-notifications";
+import { requestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 const allowedResumeTypes = new Set([
   "application/pdf",
@@ -76,6 +78,22 @@ export async function POST(request) {
       experience: cleanText(body.experience),
       lgpd_accepted: Boolean(body.lgpd_accepted),
     };
+
+    if (cleanText(body.website)) {
+      return NextResponse.json({ error: "Não foi possível validar o envio." }, { status: 400 });
+    }
+
+    const captcha = await verifyTurnstileToken({
+      token: cleanText(body["cf-turnstile-response"]),
+      remoteIp: requestIp(request),
+    });
+
+    if (!captcha.success) {
+      return NextResponse.json(
+        { error: "Confirme a verificação de segurança e tente novamente." },
+        { status: 400 },
+      );
+    }
 
     const requiredFields = [
       "name",
@@ -158,9 +176,21 @@ export async function POST(request) {
       application: result.application,
       job: relatedJob,
     }).catch((error) => ({ status: "failed", reason: error.message }));
+    const candidateConfirmation = await sendCandidateConfirmationEmail({
+      resume,
+      application: result.application,
+      job: relatedJob,
+    }).catch((error) => ({ status: "failed", reason: error.message }));
 
     return NextResponse.json(
-      { data: { ...resume, application: result.application, emailNotification } },
+      {
+        data: {
+          ...resume,
+          application: result.application,
+          emailNotification,
+          candidateConfirmation,
+        },
+      },
       { status: 201 },
     );
   } catch (error) {
