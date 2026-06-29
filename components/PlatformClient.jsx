@@ -18,6 +18,31 @@ function normalizeJob(job) {
   };
 }
 
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function isPriorityAsgJob(job) {
+  const text = normalizeSearchText([job.role, job.description].join(" "));
+  return text.includes("servicos gerais") || /\basg\b/.test(text);
+}
+
+function sortJobsByPriority(list) {
+  return [...list].sort((first, second) => {
+    const firstPriority = isPriorityAsgJob(first);
+    const secondPriority = isPriorityAsgJob(second);
+
+    if (firstPriority !== secondPriority) {
+      return firstPriority ? -1 : 1;
+    }
+
+    return new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
+  });
+}
+
 async function submitJson(url, payload) {
   const response = await fetch(url, {
     method: "POST",
@@ -50,7 +75,7 @@ async function submitFormData(url, payload) {
 }
 
 export function PlatformClient({ initialJobs, initialResumeCount, databaseConfigured }) {
-  const [jobs, setJobs] = useState(initialJobs.map(normalizeJob));
+  const [jobs, setJobs] = useState(sortJobsByPriority(initialJobs.map(normalizeJob)));
   const [resumeCount, setResumeCount] = useState(initialResumeCount);
   const [query, setQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
@@ -62,16 +87,20 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
   const [isPending, startTransition] = useTransition();
 
   const visibleJobs = useMemo(() => {
-    const term = query.toLowerCase().trim();
+    const term = normalizeSearchText(query).trim();
     if (!term) {
-      return jobs;
+      return sortJobsByPriority(jobs);
     }
 
-    return jobs.filter((job) =>
-      [job.company, job.role, job.neighborhood, job.shift, job.description]
-        .join(" ")
-        .toLowerCase()
-        .includes(term),
+    return sortJobsByPriority(
+      jobs.filter((job) =>
+        [job.company, job.role, job.neighborhood, job.shift, job.description]
+          .join(" ")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .includes(term),
+      ),
     );
   }, [jobs, query]);
 
@@ -89,7 +118,7 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     startTransition(async () => {
       try {
         const created = await submitJson("/api/jobs", data);
-        setJobs((currentJobs) => [normalizeJob(created), ...currentJobs]);
+        setJobs((currentJobs) => sortJobsByPriority([normalizeJob(created), ...currentJobs]));
         form.reset();
         showToast("Vaga publicada com sucesso.");
       } catch (error) {
@@ -181,33 +210,52 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
 
         <div className="job-grid" aria-live="polite">
           {visibleJobs.length ? (
-            visibleJobs.map((job) => (
-              <article className="job-card" key={job.id}>
-                <div>
-                  <p className="eyebrow">{job.company}</p>
-                  <h3>{job.role}</h3>
-                </div>
-                <div className="tag-row">
-                  <span className="tag">{job.neighborhood}</span>
-                  <span className="tag">{job.shift}</span>
-                </div>
-                <div className="card-meta">
-                  <span>
-                    <strong>Salário:</strong> {job.salary}
-                  </span>
-                  <span>
-                    <strong>Contato:</strong> {job.contact}
-                  </span>
-                  <span>
-                    <strong>Publicado:</strong> {formatDate(job.created_at)}
-                  </span>
-                </div>
-                <p className="card-description">{job.description}</p>
-                <button className="button primary full" type="button" onClick={() => handleApplyClick(job)}>
-                  Candidatar-se
-                </button>
-              </article>
-            ))
+            visibleJobs.map((job) => {
+              const priorityAsg = isPriorityAsgJob(job);
+
+              return (
+                <article className={`job-card${priorityAsg ? " job-card-featured" : ""}`} key={job.id}>
+                  {priorityAsg ? (
+                    <div className="featured-ribbon">
+                      <span>Prioridade A&S</span>
+                      <strong>9 vagas abertas</strong>
+                    </div>
+                  ) : null}
+
+                  <div>
+                    <p className="eyebrow">{job.company}</p>
+                    <h3>{job.role}</h3>
+                  </div>
+                  <div className="tag-row">
+                    <span className="tag">{job.neighborhood}</span>
+                    <span className="tag">{job.shift}</span>
+                    {priorityAsg ? <span className="tag tag-urgent">Contratação prioritária</span> : null}
+                  </div>
+                  {priorityAsg ? (
+                    <div className="priority-schedule" aria-label="Horários da vaga prioritária">
+                      <span>1º turno: 5h30 às 14h00</span>
+                      <span>2º turno: 12h30 às 21h00</span>
+                      <span>3º turno: 22h00 às 5h00</span>
+                    </div>
+                  ) : null}
+                  <div className="card-meta">
+                    <span>
+                      <strong>Salário:</strong> {job.salary}
+                    </span>
+                    <span>
+                      <strong>Contato:</strong> {job.contact}
+                    </span>
+                    <span>
+                      <strong>Publicado:</strong> {formatDate(job.created_at)}
+                    </span>
+                  </div>
+                  <p className="card-description">{job.description}</p>
+                  <button className="button primary full" type="button" onClick={() => handleApplyClick(job)}>
+                    Candidatar-se
+                  </button>
+                </article>
+              );
+            })
           ) : (
             <p className="empty">Nenhuma vaga encontrada com esse filtro.</p>
           )}

@@ -310,6 +310,38 @@ button:disabled {
   box-shadow: var(--shadow);
 }
 
+.job-card-featured {
+  background: linear-gradient(180deg, #fffaf1 0%, var(--white) 58%);
+  border-color: rgba(232, 79, 53, 0.42);
+  box-shadow: 0 24px 70px rgba(232, 79, 53, 0.18);
+  grid-column: span 2;
+  position: relative;
+}
+
+.featured-ribbon {
+  align-items: center;
+  background: var(--navy);
+  border-radius: 8px;
+  color: var(--white);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  padding: 10px 12px;
+}
+
+.featured-ribbon span {
+  color: var(--yellow);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.featured-ribbon strong {
+  font-size: 0.95rem;
+}
+
 .tag-row {
   display: flex;
   flex-wrap: wrap;
@@ -323,6 +355,27 @@ button:disabled {
   font-size: 0.78rem;
   font-weight: 800;
   padding: 7px 10px;
+}
+
+.tag-urgent {
+  background: #ffe6dd;
+  color: var(--tomato-dark);
+}
+
+.priority-schedule {
+  background: #fff3d2;
+  border: 1px solid rgba(255, 209, 102, 0.82);
+  border-radius: 8px;
+  color: var(--ink);
+  display: grid;
+  gap: 6px;
+  line-height: 1.35;
+  padding: 12px;
+}
+
+.priority-schedule span {
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .card-meta {
@@ -1064,6 +1117,10 @@ label {
   .admin-toolbar,
   .admin-columns {
     grid-template-columns: 1fr;
+  }
+
+  .job-card-featured {
+    grid-column: auto;
   }
 
   .section-heading {
