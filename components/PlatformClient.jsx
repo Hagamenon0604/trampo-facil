@@ -55,6 +55,10 @@ function getPriorityJobInfo(job) {
   return null;
 }
 
+function isRecruitingPriorityJob(job) {
+  return Boolean(getPriorityJobInfo(job));
+}
+
 function sortJobsByPriority(list) {
   return [...list].sort((first, second) => {
     const firstPriority = getPriorityJobInfo(first);
@@ -104,7 +108,9 @@ async function submitFormData(url, payload) {
 }
 
 export function PlatformClient({ initialJobs, initialResumeCount, databaseConfigured }) {
-  const [jobs, setJobs] = useState(sortJobsByPriority(initialJobs.map(normalizeJob)));
+  const [jobs, setJobs] = useState(() =>
+    sortJobsByPriority(initialJobs.map(normalizeJob).filter(isRecruitingPriorityJob)),
+  );
   const [resumeCount, setResumeCount] = useState(initialResumeCount);
   const [query, setQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
@@ -147,9 +153,18 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     startTransition(async () => {
       try {
         const created = await submitJson("/api/jobs", data);
-        setJobs((currentJobs) => sortJobsByPriority([normalizeJob(created), ...currentJobs]));
+        const normalizedJob = normalizeJob(created);
+
+        if (isRecruitingPriorityJob(normalizedJob)) {
+          setJobs((currentJobs) => sortJobsByPriority([normalizedJob, ...currentJobs]));
+        }
+
         form.reset();
-        showToast("Vaga publicada com sucesso.");
+        showToast(
+          isRecruitingPriorityJob(normalizedJob)
+            ? "Vaga publicada com sucesso."
+            : "Vaga recebida pela A&S. Ela será analisada antes de aparecer no portal.",
+        );
       } catch (error) {
         showToast(error.message);
       } finally {
