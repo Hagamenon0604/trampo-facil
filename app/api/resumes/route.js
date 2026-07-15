@@ -5,6 +5,7 @@ import { isAdminSessionValid } from "@/lib/admin-auth";
 import { cleanText, requireFields } from "@/lib/validators";
 import { sendNewResumeEmail } from "@/lib/email-notifications";
 import { sendCandidateConfirmationEmail } from "@/lib/email-notifications";
+import { sendInternalWhatsappNotification } from "@/lib/notifications";
 import { requestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 const allowedResumeTypes = new Set([
@@ -181,6 +182,11 @@ export async function POST(request) {
       application: result.application,
       job: relatedJob,
     }).catch((error) => ({ status: "failed", reason: error.message }));
+    const whatsappNotification = await sendInternalWhatsappNotification({
+      resume,
+      job: relatedJob,
+      source: "resume",
+    }).catch((error) => ({ status: "failed", reason: error.message }));
 
     return NextResponse.json(
       {
@@ -189,6 +195,7 @@ export async function POST(request) {
           application: result.application,
           emailNotification,
           candidateConfirmation,
+          whatsappNotification,
         },
       },
       { status: 201 },

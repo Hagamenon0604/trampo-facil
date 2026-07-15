@@ -21,6 +21,13 @@ html {
   scroll-behavior: smooth;
 }
 
+#vagas,
+#agendar,
+#empresas,
+#curriculos {
+  scroll-margin-top: 110px;
+}
+
 body {
   margin: 0;
   background: var(--paper);
@@ -289,6 +296,33 @@ textarea:focus {
   box-shadow: var(--shadow);
 }
 
+.job-card-featured {
+  border-color: rgba(232, 79, 53, 0.5);
+}
+
+.featured-ribbon {
+  align-items: center;
+  background: #fff4ef;
+  border: 1px solid rgba(232, 79, 53, 0.24);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.featured-ribbon span {
+  color: var(--tomato);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.featured-ribbon strong {
+  color: var(--navy);
+  font-size: 0.86rem;
+}
+
 .tag-row {
   display: flex;
   flex-wrap: wrap;
@@ -302,6 +336,30 @@ textarea:focus {
   font-size: 0.78rem;
   font-weight: 800;
   padding: 7px 10px;
+}
+
+.tag-urgent {
+  background: #fff4cf;
+  color: #8a5d00;
+}
+
+.priority-schedule {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--navy);
+  display: grid;
+  font-size: 0.86rem;
+  font-weight: 800;
+  gap: 5px;
+  padding: 12px;
+}
+
+.contact-link {
+  color: var(--tomato);
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .card-meta {
@@ -341,6 +399,13 @@ textarea:focus {
   margin-bottom: 4px;
 }
 
+.form-heading p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 10px 0 0;
+  max-width: 780px;
+}
+
 label {
   color: var(--ink);
   display: grid;
@@ -356,6 +421,84 @@ label {
 
 .two-columns {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.schedule-section {
+  background: linear-gradient(180deg, #f7f9fc 0%, #ffffff 100%);
+}
+
+.schedule-panel {
+  margin: 0 auto;
+  max-width: 980px;
+}
+
+.schedule-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.schedule-actions .button {
+  flex: 1 1 220px;
+}
+
+.schedule-note {
+  background: var(--mint-soft);
+  border: 1px solid rgba(31, 157, 122, 0.26);
+  border-radius: 8px;
+  color: var(--navy);
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.45;
+  margin: 0;
+  padding: 14px;
+}
+
+.selected-job {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(31, 157, 122, 0.26);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.selected-job div {
+  display: grid;
+  gap: 4px;
+}
+
+.selected-job span,
+.field-help,
+.submit-help {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.file-field input {
+  background: var(--white);
+}
+
+.checkbox-field {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+}
+
+.checkbox-field input {
+  margin-top: 4px;
+  min-height: 0;
+  width: auto;
+}
+
+.checkbox-field a {
+  color: var(--tomato);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .empty {
@@ -443,6 +586,16 @@ label {
   .stats,
   .two-columns {
     grid-template-columns: 1fr;
+  }
+
+  .featured-ribbon,
+  .selected-job {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .schedule-actions .button {
+    width: 100%;
   }
 }
 

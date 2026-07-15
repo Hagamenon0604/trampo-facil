@@ -8,6 +8,7 @@ export function Header() {
 
       <nav className="nav" aria-label="Navegação principal">
         <a href="/#vagas">Vagas</a>
+        <a href="/#agendar">Agendar</a>
         <a href="/#empresas">Cadastrar vaga</a>
         <a href="/#curriculos">
           <span className="desktop-label">Cadastrar currículo</span>

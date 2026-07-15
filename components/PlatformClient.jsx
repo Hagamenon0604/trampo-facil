@@ -3,6 +3,10 @@
 import { useMemo, useState, useTransition } from "react";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 
+const businessWhatsappNumber = "5511950877154";
+const businessWhatsappDisplay = "(11) 95087-7154";
+const scheduleRoleOptions = ["Auxiliar de Serviços Gerais (ASG)", "Atendente"];
+
 function formatDate(dateText) {
   const date = new Date(dateText);
   return new Intl.DateTimeFormat("pt-BR", {
@@ -62,6 +66,10 @@ function sortJobsByPriority(list) {
 
     return new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
   });
+}
+
+function businessWhatsappLink(message) {
+  return `https://wa.me/${businessWhatsappNumber}?text=${encodeURIComponent(message)}`;
 }
 
 async function submitJson(url, payload) {
@@ -181,6 +189,29 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     });
   }
 
+  function handleScheduleSubmit(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    data.lgpd_accepted = formData.get("lgpd_accepted") === "on";
+
+    setActiveSubmit("schedule");
+    startTransition(async () => {
+      try {
+        await submitJson("/api/public-interviews", data);
+        setResumeCount((currentCount) => currentCount + 1);
+        form.reset();
+        showToast("Entrevista solicitada com sucesso. A A&S recebeu o aviso.");
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        setActiveSubmit("");
+        setCaptchaResetKey((current) => current + 1);
+      }
+    });
+  }
+
   function handleApplyClick(job) {
     setSelectedJob(job);
     setDesiredRole(job.role);
@@ -264,7 +295,17 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
                       <strong>Salário:</strong> {job.salary}
                     </span>
                     <span>
-                      <strong>Contato:</strong> {job.contact}
+                      <strong>Contato:</strong>{" "}
+                      <a
+                        className="contact-link"
+                        href={businessWhatsappLink(
+                          `Olá! Vim pelo Trampo Fácil e tenho interesse na vaga de ${job.role}.`,
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {businessWhatsappDisplay}
+                      </a>
                     </span>
                     <span>
                       <strong>Publicado:</strong> {formatDate(job.created_at)}
@@ -281,6 +322,106 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
             <p className="empty">Nenhuma vaga encontrada com esse filtro.</p>
           )}
         </div>
+      </section>
+
+      <section className="section schedule-section" id="agendar">
+        <form
+          className="panel schedule-panel"
+          onSubmit={handleScheduleSubmit}
+          aria-busy={activeSubmit === "schedule"}
+        >
+          <div className="form-heading">
+            <p className="eyebrow">Agendamento rápido</p>
+            <h2>Agendar entrevista</h2>
+            <p>
+              Escolha uma das vagas prioritárias e um horário para entrevista. A A&S recebe a
+              solicitação por e-mail e WhatsApp Business.
+            </p>
+          </div>
+
+          <div className="field-group two-columns">
+            <label>
+              Vaga
+              <select name="desired_role" required defaultValue="">
+                <option value="">Selecione</option>
+                {scheduleRoleOptions.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Data e horário
+              <input name="starts_at" type="datetime-local" required />
+            </label>
+          </div>
+
+          <div className="field-group two-columns">
+            <label>
+              Nome completo
+              <input name="name" required autoComplete="name" placeholder="Seu nome" />
+            </label>
+            <label>
+              WhatsApp
+              <input
+                name="phone"
+                required
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="DDD + número"
+              />
+            </label>
+          </div>
+
+          <label>
+            E-mail
+            <input name="email" type="email" autoComplete="email" inputMode="email" placeholder="email@exemplo.com" />
+          </label>
+
+          <label>
+            Observações
+            <textarea
+              name="observations"
+              rows="3"
+              placeholder="Conte sua disponibilidade, bairro ou alguma informação importante."
+            />
+          </label>
+
+          <label className="checkbox-field">
+            <input name="lgpd_accepted" type="checkbox" required />
+            <span>
+              Autorizo a A&S Gestão a tratar meus dados para agendamento e processos seletivos,
+              conforme a <a href="/privacidade" target="_blank">Política de Privacidade</a>.
+            </span>
+          </label>
+
+          <label className="honeypot" aria-hidden="true">
+            Não preencha este campo
+            <input name="website" tabIndex="-1" autoComplete="off" />
+          </label>
+
+          <TurnstileWidget action="interview_schedule" resetKey={`schedule-${captchaResetKey}`} />
+
+          <div className="schedule-actions">
+            <button className="button primary" type="submit" disabled={isPending}>
+              {activeSubmit === "schedule" ? "Agendando..." : "Solicitar entrevista"}
+            </button>
+            <a
+              className="button secondary"
+              href={businessWhatsappLink("Olá! Quero falar com a A&S pelo Trampo Fácil.")}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Falar no WhatsApp
+            </a>
+          </div>
+
+          <p className="schedule-note">
+            Neste momento, o agendamento está disponível apenas para ASG e Atendente.
+          </p>
+        </form>
       </section>
 
       <section className="section forms-layout">
@@ -564,7 +705,13 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
         <span>© 2026 A&S Gestão de Pessoas</span>
         <a href="/privacidade">Política de Privacidade</a>
         <a href="/termos">Termos de Uso</a>
-        <a href="mailto:andrea@aesgestao.com">Contato</a>
+        <a
+          href={businessWhatsappLink("Olá! Vim pelo Trampo Fácil e gostaria de falar com a A&S.")}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Contato
+        </a>
       </footer>
 
       <div className={`toast ${toast ? "visible" : ""}`} role="status" aria-live="polite">

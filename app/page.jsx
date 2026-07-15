@@ -30,6 +30,9 @@ export default async function HomePage({ searchParams }) {
               <a className="button secondary" href="#curriculos">
                 Enviar currículo
               </a>
+              <a className="button dark" href="#agendar">
+                Agendar entrevista
+              </a>
             </div>
           </div>
         </section>
