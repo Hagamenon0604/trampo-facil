@@ -19,7 +19,7 @@ export default async function HomePage({ searchParams }) {
             <p className="eyebrow">A&S Gestão apresenta</p>
             <h1>Trampo Fácil</h1>
             <p>
-              Aqui na A&S Gestão conectamos talentos as melhores oportunidades. Profissionais podem cadastrar seus
+              Aqui na A&S Gestão conectamos talentos às melhores oportunidades. Profissionais podem cadastrar seus
               currículos gratuitamente, enquanto empresas divulgam vagas e encontram candidatos qualificados com mais
               agilidade.
             </p>
