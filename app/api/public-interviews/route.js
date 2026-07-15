@@ -52,6 +52,26 @@ function areaForRole(role) {
   return normalizeSearchText(role).includes("atendente") ? "Atendimento" : "Limpeza";
 }
 
+function logNotificationFailure(context, result) {
+  if (result?.status === "failed") {
+    globalThis.console.warn(`[public-interviews] Falha em ${context}.`, {
+      provider: result.provider,
+      reason: result.reason,
+    });
+  }
+}
+
+function logInterviewNotificationFailures(results) {
+  for (const result of results || []) {
+    if (result?.status === "failed") {
+      globalThis.console.warn("[public-interviews] Falha em notificação de entrevista ao candidato.", {
+        channel: result.channel,
+        reason: result.reason,
+      });
+    }
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -202,6 +222,15 @@ export async function POST(request) {
       meet = { status: "failed", reason: caughtError.message };
     }
 
+    if (meet.status === "failed") {
+      globalThis.console.warn("[public-interviews] Falha ao criar evento Google Agenda/Meet.", {
+        reason: meet.reason,
+        startsAt: startsAtIso,
+        jobId: job.id,
+        resumeId: resume.id,
+      });
+    }
+
     const interviewResult = await createInterview(interviewPayload);
 
     if (!interviewResult.configured) {
@@ -235,6 +264,11 @@ export async function POST(request) {
           source: "schedule",
         }).catch((error) => ({ status: "failed", reason: error.message })),
       ]);
+
+    logNotificationFailure("notificação por e-mail para A&S", emailNotification);
+    logNotificationFailure("confirmação por e-mail ao candidato", candidateConfirmation);
+    logInterviewNotificationFailures(candidateNotifications);
+    logNotificationFailure("notificação interna por WhatsApp", whatsappNotification);
 
     return NextResponse.json(
       {

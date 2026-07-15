@@ -50,6 +50,15 @@ function validateResumeFile(file) {
   return null;
 }
 
+function logNotificationFailure(context, result) {
+  if (result?.status === "failed") {
+    globalThis.console.warn(`[resumes] Falha em ${context}.`, {
+      provider: result.provider,
+      reason: result.reason,
+    });
+  }
+}
+
 export async function GET() {
   try {
     if (!isAdminSessionValid(await cookies())) {
@@ -187,6 +196,10 @@ export async function POST(request) {
       job: relatedJob,
       source: "resume",
     }).catch((error) => ({ status: "failed", reason: error.message }));
+
+    logNotificationFailure("notificação por e-mail para A&S", emailNotification);
+    logNotificationFailure("confirmação por e-mail ao candidato", candidateConfirmation);
+    logNotificationFailure("notificação interna por WhatsApp", whatsappNotification);
 
     return NextResponse.json(
       {

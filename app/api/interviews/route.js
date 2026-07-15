@@ -19,6 +19,17 @@ export async function GET() {
   }
 }
 
+function logInterviewNotificationFailures(results) {
+  for (const result of results || []) {
+    if (result?.status === "failed") {
+      globalThis.console.warn("[interviews] Falha em notificação de entrevista ao candidato.", {
+        channel: result.channel,
+        reason: result.reason,
+      });
+    }
+  }
+}
+
 export async function POST(request) {
   try {
     if (!isAdminSessionValid(await cookies())) {
@@ -85,6 +96,15 @@ export async function POST(request) {
       }
     }
 
+    if (meet.status === "failed") {
+      globalThis.console.warn("[interviews] Falha ao criar evento Google Agenda/Meet.", {
+        reason: meet.reason,
+        startsAt: payload.starts_at,
+        jobId: payload.job_id,
+        resumeId: payload.resume_id,
+      });
+    }
+
     const result = await createInterview(payload);
 
     if (!result.configured) {
@@ -97,6 +117,8 @@ export async function POST(request) {
     const notifications = resume
       ? await sendInterviewNotifications({ resume, interview: result.data, job })
       : [{ channel: "automatic", status: "skipped", reason: "Candidato não encontrado." }];
+
+    logInterviewNotificationFailures(notifications);
 
     return NextResponse.json({ data: { interview: result.data, availability, meet, notifications } }, { status: 201 });
   } catch (error) {
