@@ -99,6 +99,10 @@ export async function POST(request) {
     });
 
     if (!captcha.success) {
+      globalThis.console.warn("[resumes] Falha na verificação Turnstile.", {
+        reason: captcha.reason,
+        hasToken: Boolean(cleanText(body["cf-turnstile-response"])),
+      });
       return NextResponse.json(
         { error: "Confirme a verificação de segurança e tente novamente." },
         { status: 400 },

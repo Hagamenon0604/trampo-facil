@@ -95,6 +95,10 @@ export async function POST(request) {
     });
 
     if (!captcha.success) {
+      globalThis.console.warn("[public-interviews] Falha na verificação Turnstile.", {
+        reason: captcha.reason,
+        hasToken: Boolean(cleanText(body["cf-turnstile-response"])),
+      });
       return NextResponse.json(
         { error: "Confirme a verificação de segurança e tente novamente." },
         { status: 400 },
@@ -154,10 +158,16 @@ export async function POST(request) {
         endsAt: endsAtIso,
       });
     } catch (caughtError) {
-      return NextResponse.json(
-        { error: `Não foi possível consultar a Agenda Google: ${caughtError.message}` },
-        { status: 502 },
-      );
+      globalThis.console.warn("[public-interviews] Falha ao consultar Agenda Google.", {
+        reason: caughtError.message,
+        startsAt: startsAtIso,
+        jobId: job.id,
+      });
+      availability = {
+        status: "failed",
+        available: true,
+        reason: caughtError.message,
+      };
     }
 
     if (availability.status === "checked" && !availability.available) {
