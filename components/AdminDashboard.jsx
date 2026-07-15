@@ -31,7 +31,9 @@ const statusOptions = [
   ["hired", "Contratado"],
 ];
 
-const pipelineStatuses = statusOptions.filter(([value]) => value !== "all");
+const candidateStatusOptions = statusOptions.filter(([value]) => value !== "all");
+const activePipelineStatusValues = new Set(["new", "screening", "interview", "approved"]);
+const pipelineStatuses = candidateStatusOptions.filter(([value]) => activePipelineStatusValues.has(value));
 
 const channelOptions = [
   ["online", "Online"],
@@ -430,6 +432,10 @@ export function AdminDashboard({
           <div>
             <p className="eyebrow">Pipeline visual</p>
             <h2>Kanban de candidatos</h2>
+            <p className="section-note">
+              Mostrando apenas candidatos ativos. Reprovados e contratados continuam no banco de talentos e nos
+              filtros abaixo.
+            </p>
           </div>
         </div>
         <div className="kanban-board">
@@ -743,7 +749,7 @@ export function AdminDashboard({
                       )
                     }
                   >
-                    {pipelineStatuses.map(([value, label]) => (
+                    {candidateStatusOptions.map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>

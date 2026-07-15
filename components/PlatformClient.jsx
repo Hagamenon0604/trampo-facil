@@ -25,18 +25,39 @@ function normalizeSearchText(value) {
     .toLowerCase();
 }
 
-function isPriorityAsgJob(job) {
+function getPriorityJobInfo(job) {
   const text = normalizeSearchText([job.role, job.description].join(" "));
-  return text.includes("servicos gerais") || /\basg\b/.test(text);
+
+  if (text.includes("servicos gerais") || /\basg\b/.test(text)) {
+    return {
+      rank: 0,
+      ribbon: "Prioridade A&S",
+      detail: "9 vagas abertas",
+      tag: "Contratação prioritária",
+      schedule: ["1º turno: 5h30 às 14h00", "2º turno: 12h30 às 21h00", "3º turno: 22h00 às 5h00"],
+    };
+  }
+
+  if (text.includes("atendente")) {
+    return {
+      rank: 1,
+      ribbon: "Vaga em destaque",
+      detail: "Recrutamento em foco",
+      tag: "Prioridade de recrutamento",
+      schedule: [],
+    };
+  }
+
+  return null;
 }
 
 function sortJobsByPriority(list) {
   return [...list].sort((first, second) => {
-    const firstPriority = isPriorityAsgJob(first);
-    const secondPriority = isPriorityAsgJob(second);
+    const firstPriority = getPriorityJobInfo(first);
+    const secondPriority = getPriorityJobInfo(second);
 
-    if (firstPriority !== secondPriority) {
-      return firstPriority ? -1 : 1;
+    if (firstPriority || secondPriority) {
+      return (firstPriority?.rank ?? 99) - (secondPriority?.rank ?? 99);
     }
 
     return new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
@@ -211,14 +232,14 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
         <div className="job-grid" aria-live="polite">
           {visibleJobs.length ? (
             visibleJobs.map((job) => {
-              const priorityAsg = isPriorityAsgJob(job);
+              const priorityJob = getPriorityJobInfo(job);
 
               return (
-                <article className={`job-card${priorityAsg ? " job-card-featured" : ""}`} key={job.id}>
-                  {priorityAsg ? (
+                <article className={`job-card${priorityJob ? " job-card-featured" : ""}`} key={job.id}>
+                  {priorityJob ? (
                     <div className="featured-ribbon">
-                      <span>Prioridade A&S</span>
-                      <strong>9 vagas abertas</strong>
+                      <span>{priorityJob.ribbon}</span>
+                      <strong>{priorityJob.detail}</strong>
                     </div>
                   ) : null}
 
@@ -229,13 +250,13 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
                   <div className="tag-row">
                     <span className="tag">{job.neighborhood}</span>
                     <span className="tag">{job.shift}</span>
-                    {priorityAsg ? <span className="tag tag-urgent">Contratação prioritária</span> : null}
+                    {priorityJob ? <span className="tag tag-urgent">{priorityJob.tag}</span> : null}
                   </div>
-                  {priorityAsg ? (
+                  {priorityJob?.schedule?.length ? (
                     <div className="priority-schedule" aria-label="Horários da vaga prioritária">
-                      <span>1º turno: 5h30 às 14h00</span>
-                      <span>2º turno: 12h30 às 21h00</span>
-                      <span>3º turno: 22h00 às 5h00</span>
+                      {priorityJob.schedule.map((schedule) => (
+                        <span key={schedule}>{schedule}</span>
+                      ))}
                     </div>
                   ) : null}
                   <div className="card-meta">

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createInterview, getInterviews, getJobs, getResumes } from "@/lib/data";
 import { isAdminSessionValid } from "@/lib/admin-auth";
-import { createGoogleMeetEvent } from "@/lib/google-calendar";
+import { checkGoogleCalendarAvailability, createGoogleMeetEvent } from "@/lib/google-calendar";
 import { sendInterviewNotifications } from "@/lib/notifications";
 import { cleanText, requireFields } from "@/lib/validators";
 
@@ -45,7 +45,30 @@ export async function POST(request) {
     const [resumes, jobs] = await Promise.all([getResumes(), getJobs({ includeDrafts: true })]);
     const resume = resumes.find((item) => item.id === payload.resume_id);
     const job = jobs.find((item) => item.id === payload.job_id);
+    let availability = { status: "skipped", available: true, reason: "Google Calendar não configurado." };
     let meet = { status: "skipped", reason: "Entrevista não é online ou já possui local/link." };
+
+    try {
+      availability = await checkGoogleCalendarAvailability({
+        startsAt: payload.starts_at,
+        endsAt: payload.ends_at,
+      });
+    } catch (caughtError) {
+      return NextResponse.json(
+        { error: `Não foi possível consultar a Agenda Google: ${caughtError.message}` },
+        { status: 502 },
+      );
+    }
+
+    if (availability.status === "checked" && !availability.available) {
+      return NextResponse.json(
+        {
+          error: "Esse horário já possui compromisso na Agenda Google. Escolha outro horário para a entrevista.",
+          data: { availability },
+        },
+        { status: 409 },
+      );
+    }
 
     if (resume && payload.channel === "online" && !payload.location) {
       try {
@@ -75,7 +98,7 @@ export async function POST(request) {
       ? await sendInterviewNotifications({ resume, interview: result.data, job })
       : [{ channel: "automatic", status: "skipped", reason: "Candidato não encontrado." }];
 
-    return NextResponse.json({ data: { interview: result.data, meet, notifications } }, { status: 201 });
+    return NextResponse.json({ data: { interview: result.data, availability, meet, notifications } }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
