@@ -65,10 +65,18 @@ export async function POST(request) {
         endsAt: payload.ends_at,
       });
     } catch (caughtError) {
-      return NextResponse.json(
-        { error: `Não foi possível consultar a Agenda Google: ${caughtError.message}` },
-        { status: 502 },
-      );
+      globalThis.console.warn("[interviews] Falha ao consultar Agenda Google; seguindo com tentativa de criação do evento.", {
+        reason: caughtError.message,
+        startsAt: payload.starts_at,
+        jobId: payload.job_id,
+        resumeId: payload.resume_id,
+      });
+
+      availability = {
+        status: "check_failed",
+        available: true,
+        reason: caughtError.message,
+      };
     }
 
     if (availability.status === "checked" && !availability.available) {
@@ -79,6 +87,16 @@ export async function POST(request) {
         },
         { status: 409 },
       );
+    }
+
+    if (payload.channel === "online" && !payload.location && availability.status !== "checked") {
+      globalThis.console.warn("[interviews] Disponibilidade não confirmada; tentando confirmar pelo evento do Google.", {
+        status: availability.status,
+        reason: availability.reason,
+        startsAt: payload.starts_at,
+        jobId: payload.job_id,
+        resumeId: payload.resume_id,
+      });
     }
 
     if (resume && payload.channel === "online" && !payload.location) {
@@ -92,17 +110,36 @@ export async function POST(request) {
             .join("\n");
         }
       } catch (caughtError) {
-        meet = { status: "failed", reason: caughtError.message };
-      }
-    }
+        globalThis.console.error("[interviews] Falha ao criar evento Google Agenda/Meet.", {
+          reason: caughtError.message,
+          startsAt: payload.starts_at,
+          jobId: payload.job_id,
+          resumeId: payload.resume_id,
+        });
 
-    if (meet.status === "failed") {
-      globalThis.console.warn("[interviews] Falha ao criar evento Google Agenda/Meet.", {
-        reason: meet.reason,
-        startsAt: payload.starts_at,
-        jobId: payload.job_id,
-        resumeId: payload.resume_id,
-      });
+        return NextResponse.json(
+          { error: "Não foi possível criar o evento na Agenda Google. A entrevista não foi salva." },
+          { status: 502 },
+        );
+      }
+
+      if (meet.status !== "created" || !meet.eventId) {
+        globalThis.console.error("[interviews] Google Agenda não criou evento para a entrevista.", {
+          status: meet.status,
+          reason: meet.reason,
+          startsAt: payload.starts_at,
+          jobId: payload.job_id,
+          resumeId: payload.resume_id,
+        });
+
+        return NextResponse.json(
+          {
+            error: "A Agenda Google ainda não confirmou o evento. A entrevista não foi salva.",
+            data: { meet },
+          },
+          { status: 502 },
+        );
+      }
     }
 
     const result = await createInterview(payload);

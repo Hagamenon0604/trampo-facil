@@ -6,7 +6,13 @@ import { sendInternalWhatsappNotification, sendInterviewNotifications } from "@/
 import { requestIp, verifyTurnstileToken } from "@/lib/turnstile";
 import { cleanText, requireFields } from "@/lib/validators";
 
-const allowedRoles = new Set(["Auxiliar de Serviços Gerais (ASG)", "Atendente"]);
+const allowedRoles = new Set([
+  "Auxiliar de Serviços Gerais (ASG)",
+  "Repositor de Buffet",
+  "Atendente",
+  "Cozinheiro",
+  "Chef executivo",
+]);
 
 function normalizeSearchText(value) {
   return String(value || "")
@@ -40,8 +46,20 @@ function findJobForRole(jobs, desiredRole) {
       return isPublished && (text.includes("servicos gerais") || /\basg\b/.test(text));
     }
 
+    if (normalizedRole.includes("repositor de buffet") || (normalizedRole.includes("repositor") && normalizedRole.includes("buffet"))) {
+      return isPublished && (text.includes("repositor de buffet") || (text.includes("repositor") && text.includes("buffet")));
+    }
+
     if (normalizedRole.includes("atendente")) {
       return isPublished && text.includes("atendente");
+    }
+
+    if (normalizedRole.includes("cozinheiro")) {
+      return isPublished && text.includes("cozinheiro");
+    }
+
+    if (normalizedRole.includes("chef executivo")) {
+      return isPublished && text.includes("chef executivo");
     }
 
     return false;
@@ -49,7 +67,21 @@ function findJobForRole(jobs, desiredRole) {
 }
 
 function areaForRole(role) {
-  return normalizeSearchText(role).includes("atendente") ? "Atendimento" : "Limpeza";
+  const normalizedRole = normalizeSearchText(role);
+
+  if (normalizedRole.includes("atendente")) {
+    return "Atendimento";
+  }
+
+  if (normalizedRole.includes("repositor")) {
+    return "Atendimento";
+  }
+
+  if (normalizedRole.includes("cozinheiro") || normalizedRole.includes("chef executivo")) {
+    return "Cozinha";
+  }
+
+  return "Limpeza";
 }
 
 function logNotificationFailure(context, result) {
@@ -158,13 +190,14 @@ export async function POST(request) {
         endsAt: endsAtIso,
       });
     } catch (caughtError) {
-      globalThis.console.warn("[public-interviews] Falha ao consultar Agenda Google.", {
+      globalThis.console.warn("[public-interviews] Falha ao consultar Agenda Google; seguindo com tentativa de criação do evento.", {
         reason: caughtError.message,
         startsAt: startsAtIso,
         jobId: job.id,
       });
+
       availability = {
-        status: "failed",
+        status: "check_failed",
         available: true,
         reason: caughtError.message,
       };
@@ -178,6 +211,15 @@ export async function POST(request) {
         },
         { status: 409 },
       );
+    }
+
+    if (availability.status !== "checked") {
+      globalThis.console.warn("[public-interviews] Disponibilidade não confirmada; tentando confirmar pelo evento do Google.", {
+        status: availability.status,
+        reason: availability.reason,
+        startsAt: startsAtIso,
+        jobId: job.id,
+      });
     }
 
     const resumeResult = await createResume({
@@ -229,16 +271,39 @@ export async function POST(request) {
           .join("\n");
       }
     } catch (caughtError) {
-      meet = { status: "failed", reason: caughtError.message };
+      globalThis.console.error("[public-interviews] Falha ao criar evento Google Agenda/Meet.", {
+        reason: caughtError.message,
+        startsAt: startsAtIso,
+        jobId: job.id,
+        resumeId: resume.id,
+      });
+
+      return NextResponse.json(
+        {
+          error:
+            "Não foi possível criar o evento na Agenda Google. O agendamento não foi confirmado. Tente novamente em alguns minutos ou fale com a A&S pelo WhatsApp.",
+        },
+        { status: 502 },
+      );
     }
 
-    if (meet.status === "failed") {
-      globalThis.console.warn("[public-interviews] Falha ao criar evento Google Agenda/Meet.", {
+    if (meet.status !== "created" || !meet.eventId) {
+      globalThis.console.error("[public-interviews] Google Agenda não criou evento para o agendamento.", {
+        status: meet.status,
         reason: meet.reason,
         startsAt: startsAtIso,
         jobId: job.id,
         resumeId: resume.id,
       });
+
+      return NextResponse.json(
+        {
+          error:
+            "A Agenda Google ainda não confirmou o evento. O agendamento não foi concluído. Tente novamente em alguns minutos ou fale com a A&S pelo WhatsApp.",
+          data: { meet },
+        },
+        { status: 502 },
+      );
     }
 
     const interviewResult = await createInterview(interviewPayload);
