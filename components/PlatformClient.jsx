@@ -5,7 +5,13 @@ import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 const businessWhatsappNumber = "5511950877154";
 const businessWhatsappDisplay = "(11) 95087-7154";
-const scheduleRoleOptions = ["Auxiliar de Serviços Gerais (ASG)", "Atendente"];
+const scheduleRoleOptions = [
+  "Auxiliar de Serviços Gerais (ASG)",
+  "Repositor de Buffet",
+  "Atendente",
+  "Cozinheiro",
+  "Chef executivo",
+];
 
 function formatDate(dateText) {
   const date = new Date(dateText);
@@ -42,12 +48,12 @@ function getPriorityJobInfo(job) {
     };
   }
 
-  if (text.includes("atendente")) {
+  if (text.includes("repositor de buffet") || (text.includes("repositor") && text.includes("buffet"))) {
     return {
       rank: 1,
-      ribbon: "Vaga em destaque",
-      detail: "Recrutamento em foco",
-      tag: "Prioridade de recrutamento",
+      ribbon: "Prioridade A&S",
+      detail: "Vaga em destaque",
+      tag: "Contratação prioritária",
       schedule: [],
     };
   }
@@ -107,6 +113,33 @@ async function submitFormData(url, payload) {
   return result.data;
 }
 
+function notificationWasSent(result) {
+  return result?.status === "sent";
+}
+
+function buildScheduleFeedback(result) {
+  const meetCreated = result?.meet?.status === "created" && result?.meet?.eventId;
+  const adminEmailSent = notificationWasSent(result?.emailNotification);
+  const candidateEmailSent = notificationWasSent(result?.candidateConfirmation);
+  const whatsappSent = notificationWasSent(result?.whatsappNotification);
+  const pending = [];
+
+  if (!meetCreated) pending.push("Agenda Google");
+  if (!adminEmailSent) pending.push("e-mail para A&S");
+  if (!candidateEmailSent) pending.push("e-mail para candidato");
+  if (!whatsappSent) pending.push("WhatsApp da A&S");
+
+  if (!pending.length) {
+    return "Entrevista agendada com sucesso. A&S recebeu os avisos por e-mail e WhatsApp.";
+  }
+
+  if (pending.length === 4) {
+    return "Solicitação registrada, mas Agenda, e-mail e WhatsApp precisam de revisão nos logs da Vercel.";
+  }
+
+  return `Solicitação registrada, mas precisa revisar: ${pending.join(", ")}.`;
+}
+
 export function PlatformClient({ initialJobs, initialResumeCount, databaseConfigured }) {
   const [jobs, setJobs] = useState(() =>
     sortJobsByPriority(initialJobs.map(normalizeJob).filter(isRecruitingPriorityJob)),
@@ -139,9 +172,9 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     );
   }, [jobs, query]);
 
-  function showToast(message) {
+  function showToast(message, duration = 2800) {
     setToast(message);
-    window.setTimeout(() => setToast(""), 2800);
+    window.setTimeout(() => setToast(""), duration);
   }
 
   function handleJobSubmit(event) {
@@ -214,10 +247,10 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
     setActiveSubmit("schedule");
     startTransition(async () => {
       try {
-        await submitJson("/api/public-interviews", data);
+        const scheduleResult = await submitJson("/api/public-interviews", data);
         setResumeCount((currentCount) => currentCount + 1);
         form.reset();
-        showToast("Entrevista solicitada com sucesso. A A&S recebeu o aviso.");
+        showToast(buildScheduleFeedback(scheduleResult), 7000);
       } catch (error) {
         showToast(error.message);
       } finally {
@@ -434,7 +467,7 @@ export function PlatformClient({ initialJobs, initialResumeCount, databaseConfig
           </div>
 
           <p className="schedule-note">
-            Neste momento, o agendamento está disponível apenas para ASG e Atendente.
+            Neste momento, o agendamento está disponível para ASG, Repositor de Buffet, Atendente, Cozinheiro e Chef executivo.
           </p>
         </form>
       </section>

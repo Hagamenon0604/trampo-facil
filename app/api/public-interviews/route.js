@@ -276,6 +276,7 @@ export async function POST(request) {
         startsAt: startsAtIso,
         jobId: job.id,
         resumeId: resume.id,
+        googleCalendarId: meet.calendarId,
       });
 
       return NextResponse.json(
@@ -294,6 +295,7 @@ export async function POST(request) {
         startsAt: startsAtIso,
         jobId: job.id,
         resumeId: resume.id,
+        googleCalendarId: meet.calendarId,
       });
 
       return NextResponse.json(
@@ -305,6 +307,16 @@ export async function POST(request) {
         { status: 502 },
       );
     }
+
+    globalThis.console.info("[public-interviews] Evento Google confirmado para agendamento.", {
+      resumeId: resume.id,
+      jobId: job.id,
+      desiredRole: payload.desired_role,
+      startsAt: startsAtIso,
+      googleCalendarId: meet.calendarId,
+      googleEventId: meet.eventId,
+      googleEventLink: meet.htmlLink,
+    });
 
     const interviewResult = await createInterview(interviewPayload);
 
@@ -344,6 +356,22 @@ export async function POST(request) {
     logNotificationFailure("confirmação por e-mail ao candidato", candidateConfirmation);
     logInterviewNotificationFailures(candidateNotifications);
     logNotificationFailure("notificação interna por WhatsApp", whatsappNotification);
+
+    globalThis.console.info("[public-interviews] Agendamento processado.", {
+      interviewId: interviewResult.data?.id,
+      resumeId: resume.id,
+      jobId: job.id,
+      desiredRole: payload.desired_role,
+      startsAt: startsAtIso,
+      googleCalendarId: meet.calendarId,
+      googleEventId: meet.eventId,
+      adminEmailStatus: emailNotification?.status,
+      candidateEmailStatus: candidateConfirmation?.status,
+      whatsappStatus: whatsappNotification?.status,
+      candidateNotificationStatus: (candidateNotifications || [])
+        .map((notification) => `${notification.channel}:${notification.status}`)
+        .join(","),
+    });
 
     return NextResponse.json(
       {
