@@ -14,11 +14,87 @@ const allowedRoles = new Set([
   "Chef executivo",
 ]);
 
+const priorityRoleMap = {
+  asg: "Auxiliar de Serviços Gerais (ASG)",
+  "repositor de buffet": "Repositor de Buffet",
+  atendente: "Atendente",
+  cozinheiro: "Cozinheiro",
+  "chef executivo": "Chef executivo",
+};
+
+function normalizeDesiredRole(rawRole) {
+  const cleaned = cleanText(rawRole);
+  const key = normalizeSearchText(cleaned);
+  return priorityRoleMap[key] || cleaned;
+}
+
 function normalizeSearchText(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+const inactiveJobStatuses = new Set([
+  "archived",
+  "arquivada",
+  "closed",
+  "draft",
+  "encerrada",
+  "fechada",
+  "inactive",
+  "inativa",
+  "pausada",
+  "paused",
+  "rascunho",
+]);
+
+function jobSearchText(job) {
+  return normalizeSearchText(
+    [
+      job.role,
+      job.title,
+      job.position,
+      job.area,
+      job.company,
+      job.trade_name,
+      job.neighborhood,
+      job.description,
+      job.requirements,
+    ].join(" "),
+  );
+}
+
+function isSchedulableJob(job) {
+  const status = normalizeSearchText(job?.status || "published").trim();
+
+  if (inactiveJobStatuses.has(status)) {
+    return false;
+  }
+
+  if (job?.published === false) {
+    return false;
+  }
+
+  return true;
+}
+
+function jobStatusPriority(job) {
+  const status = normalizeSearchText(job?.status || "published").trim();
+
+  if (status === "published" || status === "publicada") {
+    return 0;
+  }
+
+  if (status === "active" || status === "ativa") {
+    return 1;
+  }
+
+  if (!status) {
+    return 2;
+  }
+
+  return 3;
 }
 
 function parseSaoPauloDateTime(value) {
@@ -35,35 +111,58 @@ function addMinutes(value, minutes) {
   return new Date(new Date(value).getTime() + minutes * 60 * 1000).toISOString();
 }
 
-function findJobForRole(jobs, desiredRole) {
+function roleMatcherFor(desiredRole) {
   const normalizedRole = normalizeSearchText(desiredRole);
 
-  return jobs.find((job) => {
-    const text = normalizeSearchText([job.role, job.description].join(" "));
-    const isPublished = job.status === "published";
+  if (normalizedRole.includes("servicos gerais") || /\basg\b/.test(normalizedRole)) {
+    return (text) =>
+      text.includes("auxiliar de servicos gerais") ||
+      text.includes("servicos gerais") ||
+      /\basg\b/.test(text);
+  }
 
-    if (normalizedRole.includes("servicos gerais") || normalizedRole.includes("asg")) {
-      return isPublished && (text.includes("servicos gerais") || /\basg\b/.test(text));
-    }
+  if (
+    normalizedRole.includes("repositor de buffet") ||
+    (normalizedRole.includes("repositor") && normalizedRole.includes("buffet"))
+  ) {
+    return (text) =>
+      text.includes("repositor de buffet") ||
+      (text.includes("repositor") && text.includes("buffet"));
+  }
 
-    if (normalizedRole.includes("repositor de buffet") || (normalizedRole.includes("repositor") && normalizedRole.includes("buffet"))) {
-      return isPublished && (text.includes("repositor de buffet") || (text.includes("repositor") && text.includes("buffet")));
-    }
+  if (normalizedRole.includes("atendente")) {
+    return (text) => text.includes("atendente");
+  }
 
-    if (normalizedRole.includes("atendente")) {
-      return isPublished && text.includes("atendente");
-    }
+  if (normalizedRole.includes("cozinheiro")) {
+    return (text) => text.includes("cozinheiro");
+  }
 
-    if (normalizedRole.includes("cozinheiro")) {
-      return isPublished && text.includes("cozinheiro");
-    }
+  if (
+    normalizedRole.includes("chef executivo") ||
+    (normalizedRole.includes("chef") && normalizedRole.includes("executivo"))
+  ) {
+    return (text) =>
+      text.includes("chef executivo") ||
+      (text.includes("chef") && text.includes("executivo"));
+  }
 
-    if (normalizedRole.includes("chef executivo")) {
-      return isPublished && text.includes("chef executivo");
-    }
+  return null;
+}
 
-    return false;
-  });
+function findJobForRole(jobs, desiredRole) {
+  const matcher = roleMatcherFor(desiredRole);
+
+  if (!matcher) {
+    return null;
+  }
+
+  return (
+    jobs
+      .filter(isSchedulableJob)
+      .filter((job) => matcher(jobSearchText(job)))
+      .sort((firstJob, secondJob) => jobStatusPriority(firstJob) - jobStatusPriority(secondJob))[0] || null
+  );
 }
 
 function areaForRole(role) {
@@ -108,7 +207,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const payload = {
-      desired_role: cleanText(body.desired_role),
+      desired_role: normalizeDesiredRole(body.desired_role),
       name: cleanText(body.name),
       phone: cleanText(body.phone),
       email: cleanText(body.email),
@@ -176,9 +275,12 @@ export async function POST(request) {
     const job = findJobForRole(jobs, payload.desired_role);
 
     if (!job) {
-      return NextResponse.json(
-        { error: "Não encontramos uma vaga ativa para esse agendamento." },
-        { status: 404 },
+      globalThis.console.warn(
+        "[public-interviews] Vaga ativa não encontrada; prosseguindo com agendamento prioritário.",
+        {
+          desiredRole: payload.desired_role,
+          isPriorityRole: allowedRoles.has(payload.desired_role),
+        },
       );
     }
 
@@ -193,7 +295,7 @@ export async function POST(request) {
       globalThis.console.warn("[public-interviews] Falha ao consultar Agenda Google; seguindo com tentativa de criação do evento.", {
         reason: caughtError.message,
         startsAt: startsAtIso,
-        jobId: job.id,
+        jobId: job?.id,
       });
 
       availability = {
@@ -218,12 +320,12 @@ export async function POST(request) {
         status: availability.status,
         reason: availability.reason,
         startsAt: startsAtIso,
-        jobId: job.id,
+        jobId: job?.id,
       });
     }
 
     const resumeResult = await createResume({
-      job_id: job.id,
+      job_id: job?.id || null,
       name: payload.name,
       phone: payload.phone,
       email: payload.email,
@@ -246,7 +348,7 @@ export async function POST(request) {
     const resume = resumeResult.data;
     const interviewPayload = {
       resume_id: resume.id,
-      job_id: job.id,
+      job_id: job?.id || null,
       starts_at: startsAtIso,
       ends_at: endsAtIso,
       channel: "online",
@@ -274,7 +376,7 @@ export async function POST(request) {
       globalThis.console.error("[public-interviews] Falha ao criar evento Google Agenda/Meet.", {
         reason: caughtError.message,
         startsAt: startsAtIso,
-        jobId: job.id,
+        jobId: job?.id,
         resumeId: resume.id,
         googleCalendarId: meet.calendarId,
       });
@@ -293,7 +395,7 @@ export async function POST(request) {
         status: meet.status,
         reason: meet.reason,
         startsAt: startsAtIso,
-        jobId: job.id,
+        jobId: job?.id,
         resumeId: resume.id,
         googleCalendarId: meet.calendarId,
       });
@@ -310,7 +412,7 @@ export async function POST(request) {
 
     globalThis.console.info("[public-interviews] Evento Google confirmado para agendamento.", {
       resumeId: resume.id,
-      jobId: job.id,
+      jobId: job?.id,
       desiredRole: payload.desired_role,
       startsAt: startsAtIso,
       googleCalendarId: meet.calendarId,
@@ -360,7 +462,7 @@ export async function POST(request) {
     globalThis.console.info("[public-interviews] Agendamento processado.", {
       interviewId: interviewResult.data?.id,
       resumeId: resume.id,
-      jobId: job.id,
+      jobId: job?.id,
       desiredRole: payload.desired_role,
       startsAt: startsAtIso,
       googleCalendarId: meet.calendarId,
@@ -393,3 +495,7 @@ export async function POST(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+TOOL_NAME: run_terminal_command
+BEGIN_ARG: command
+"grep -n \"job\" app/api/public-interviews/route.js"
+END_ARG
