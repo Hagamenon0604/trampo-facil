@@ -495,7 +495,3 @@ export async function POST(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-TOOL_NAME: run_terminal_command
-BEGIN_ARG: command
-"grep -n \"job\" app/api/public-interviews/route.js"
-END_ARG
